@@ -1,0 +1,16 @@
+/* Global color configuration - CSS version */
+/* These variables can be used across different applications */
+
+/* Main colors */
+@define-color primary #A0A0A0;       /* Primary text color */
+@define-color muted #65737E;         /* Muted/secondary text color */
+@define-color active #FFCFA8;        /* Active/highlighted elements */
+@define-color background #101010;    /* Main background color */
+@define-color background-alt #161616; /* Alternative background color */
+@define-color border #505050;        /* Border color */
+
+/* Alert colors */
+@define-color success #99FFE4;       /* Success messages and indicators */
+@define-color error #FF8080;         /* Error messages and indicators */
+@define-color warning #FFC799;       /* Warning messages and indicators */
+@define-color info #99FFE4;          /* Information messages and indicators */

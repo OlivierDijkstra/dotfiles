@@ -1,0 +1,7 @@
+font-size = 14
+
+theme = vesper
+font-family = JetBrainsMono Nerd Font
+keybind = ctrl+v=paste_from_clipboard
+
+resize-overlay = never

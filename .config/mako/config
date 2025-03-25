@@ -1,0 +1,69 @@
+# General settings
+markup=1
+actions=1
+sort=-time
+layer=overlay
+anchor=top-right
+max-visible=5
+
+# Format
+font=JetBrainsMono Nerd Font 12
+width=400
+height=100
+margin=10
+padding=15
+border-size=2
+border-radius=5
+
+# Colors from theme
+background-color=#101010F2
+text-color=#FFFFFF
+border-color=#505050
+progress-color=#65737E
+
+# Format
+format=<b>%s</b> <span color="#A0A0A0">(%a)</span>\n%b
+
+# Icons
+icons=true
+
+# Interaction
+on-button-left=invoke-default-action
+on-button-middle=dismiss-all
+on-button-right=dismiss
+on-touch=dismiss
+
+# Timeout settings (in milliseconds)
+default-timeout=5000
+
+# History
+max-history=10
+history=1
+
+# Hidden format
+[hidden]
+format=Hidden: %h [%t]
+
+# Urgency levels
+[urgency=low]
+text-color=#A0A0A0
+default-timeout=10000
+
+[urgency=low actionable]
+border-color=#A0A0A0
+
+[urgency=normal actionable]
+border-color=#65737E
+
+[urgency=high]
+border-color=#FF8080
+default-timeout=0
+
+[urgency=high actionable]
+border-color=#FFCFA8
+
+# Group settings
+group-by=app-name,summary
+
+[grouped]
+format=(%g) <b>%s</b>\n%b

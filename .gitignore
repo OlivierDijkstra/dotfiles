@@ -1,0 +1,60 @@
+# Ignore everything by default
+*
+
+# Don't ignore directories, so we can recurse into them
+!*/
+
+# Don't ignore .gitignore and specific config files we want to track
+!.gitignore
+!.config/*/
+!.config/*/*.conf
+!.config/*/*.css
+!.config/*/*.toml
+!.config/*/*.yaml
+!.config/*/*.yml
+!.config/*/*.json
+!.config/*/config
+!.config/*/layout
+!.config/*/style.css
+
+# Specific application configs to track
+!.config/hypr/
+!.config/waybar/
+!.config/wlogout/
+!.config/theme/
+!.config/xdg-desktop-portal/
+
+# Ignore certain patterns within tracked directories
+.config/*/cache/
+.config/*/Cache/
+.config/*/.cache/
+.config/*/logs/
+.config/*/log/
+.config/*/*.log
+.config/*/*.tmp
+.config/*/*.temp
+
+# Ignore backup files
+*~
+*.bak
+*.backup
+*.swp
+*.swo
+
+# Ignore local environment files
+.env
+.env.local
+.env.*
+
+# Ignore compiled files
+*.o
+*.so
+*.pyc
+__pycache__/
+*.class
+
+node_modules/
+bun.lock
+debug.log
+last_action
+state

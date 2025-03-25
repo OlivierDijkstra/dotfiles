@@ -1,0 +1,42 @@
+[[plugin.deps]]
+use = "yazi-rs/plugins:full-border"
+rev = "5186af7"
+hash = "ae9e1d0c6bfd68cdebc98cc684c22b45"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:smart-enter"
+rev = "5186af7"
+hash = "aef2b1a805b80cce573bb766f1459d88"
+
+[[plugin.deps]]
+use = "KKV9/compress"
+rev = "60b24af"
+hash = "ee025be766240cc98e671754ac836da3"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:mount"
+rev = "5186af7"
+hash = "5c4d8080367dd2561a18c1cf5a1dd295"
+
+[[plugin.deps]]
+use = "boydaihungst/restore"
+rev = "5d22884"
+hash = "8e6fc2d660f661c91e30b10dd1a251b8"
+
+[[plugin.deps]]
+use = "imsi32/yatline"
+rev = "6b0fc1e"
+hash = "ab115c6cc77f5710c27f39dfa2f3d4d"
+
+[[plugin.deps]]
+use = "yazi-rs/plugins:git"
+rev = "92f78dc"
+hash = "806cb2842b64e976ba2c65a3e3724518"
+
+[[plugin.deps]]
+use = "boydaihungst/mediainfo"
+rev = "447fe95"
+hash = "dcaebc8bc261206f6b59e2c67464af5"
+
+[flavor]
+deps = []

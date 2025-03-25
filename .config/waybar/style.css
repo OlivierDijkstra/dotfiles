@@ -1,0 +1,86 @@
+@import "../theme/colors.css";
+
+* {
+    font-family: "JetBrainsMono Nerd Font", monospace;
+    font-size: 16px;
+    min-height: 0;
+    font-weight: bold;
+}
+
+window#waybar {
+    background: transparent;
+    color: @foreground;
+}
+
+window#waybar > box.horizontal {
+    padding: 0 4px;
+    margin: 0 10px;
+    margin-top: 2px;
+
+    background-color: rgba(16, 16, 16, 0.8);
+    transition-property: background-color;
+    transition-duration: 0.1s;
+    border-radius: 9999999999px;
+}
+
+label.module {
+    margin: 4px 8px;
+    background-color: rgba(25, 25, 25, 0.8);
+    border-radius: 999999999px;
+    padding: 0 8px;
+    transition-property: background-color;
+    transition-duration: 0.1s;
+    min-height: 24px; 
+    min-width: 16px;
+}
+
+label.module:hover {
+    background-color: rgb(28, 28, 28);
+}
+
+.modules-right label.module {
+    margin-right: 0px;
+}
+
+.modules-center {
+    color: @primary;
+}
+
+#workspaces {
+}
+
+#workspaces button {
+    color: @primary;
+    background: rgba(25, 25, 25, 0.8);
+    border: none;
+    border-radius: 0px;
+    box-shadow: none;
+    margin-right: 4px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    border-radius: 9999999999px;
+    transition-property: background-color;
+}
+
+#workspaces button:hover {
+    background-color: rgb(28, 28, 28);
+}
+
+#workspaces button.active {
+    color: @secondary;
+}
+
+#workspaces button.urgent {
+    color: @error;
+}
+
+#custom-system-menu {
+    /* color: @error; */
+    font-size: 16px;
+    padding: 0px 4px 0px 2px;
+    margin: 4px 8px;
+}
+
+#custom-waycap {
+    padding-left: 6px;
+}

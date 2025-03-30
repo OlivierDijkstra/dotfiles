@@ -84,3 +84,21 @@ label.module:hover {
 #custom-waycap {
     padding-left: 6px;
 }
+
+/* Docker module styling */
+#custom-docker {
+    font-size: 16px;
+    padding: 0 8px;
+}
+
+#custom-docker.docker {
+    color: @error;
+}
+
+#custom-docker.docker.loading {
+    color: @warning;
+}
+
+#custom-docker.docker.running {
+    color: @success;
+}

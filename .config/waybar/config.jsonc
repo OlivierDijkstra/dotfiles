@@ -1,0 +1,82 @@
+{
+    "position": "top",
+    "modules-left": [
+        "hyprland/workspaces"
+    ],
+    "modules-center": [
+        "hyprland/window"
+    ],
+    "modules-right": [
+        "custom/hyprsunset",
+        "custom/waycap",
+        "custom/waypick",
+        "custom/docker",
+        "pulseaudio",
+        "clock",
+        "custom/system-menu"
+    ],
+    "custom/waycap": {
+        "format": "{}",
+        "return-type": "json",
+        "interval": "once",
+        "exec": "$HOME/.config/waybar/modules/waycap/waycap.sh",
+        "on-click": "$HOME/.config/waybar/modules/waycap/waycap.sh menu",
+        "on-click-right": "$HOME/.config/waybar/modules/waycap/waycap.sh screenshot_region",
+        "signal": 9,
+        "tooltip": true,
+        "escape": false
+    },
+    "custom/waypick": {
+        "format": "{}",
+        "return-type": "json",
+        "interval": "once",
+        "exec": "$HOME/.config/waybar/modules/waypick/waypick.sh",
+        "on-click": "$HOME/.config/waybar/modules/waypick/waypick.sh pick && pkill -RTMIN+9 waybar",
+        "on-click-right": "$HOME/.config/waybar/modules/waypick/waypick.sh copy",
+        "signal": 9,
+        "tooltip": true,
+        "escape": false
+    },
+    "custom/hyprsunset": {
+        "format": "{}",
+        "return-type": "json",
+        "interval": "once",
+        "exec": "$HOME/.config/waybar/modules/hyprsunset/hyprsunset.sh",
+        "on-click": "$HOME/.config/waybar/modules/hyprsunset/hyprsunset.sh toggle",
+        "signal": 9,
+        "tooltip": true,
+        "escape": false
+    },
+    "custom/docker": {
+        "format": "{}",
+        "return-type": "json",
+        "interval": "once",
+        "exec": "$HOME/.config/waybar/modules/docker/docker.sh",
+        "on-click": "$HOME/.config/waybar/modules/docker/docker.sh toggle && pkill -RTMIN+9 waybar",
+        "on-click-right": "ghostty --title='Docker Control' -e 'lazydocker'",
+        "signal": 9,
+        "tooltip": true,
+        "escape": false
+    },
+    "custom/system-menu": {
+        "format": " ⏻ ",
+        "tooltip": "Power Menu",
+        "on-click": "$HOME/.config/menus/system-menu.sh"
+    },
+    "clock": {
+        "format": "<span>  </span>{:%a %d %H:%M}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+    },
+    "pulseaudio": {
+        "format": "{icon}  {volume}%",
+        "format-muted": "",
+        "format-icons": {
+            "default": [
+                "",
+                "",
+                " "
+            ]
+        },
+        "on-click": "ghostty --title='Audio Control' -e 'pulsemixer'"
+    }
+}

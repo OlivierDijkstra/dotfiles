@@ -1,0 +1,16 @@
+// WayCap module configuration
+// Add this to your waybar config.jsonc
+
+/*
+"custom/waycap": {
+    "format": "{}",
+    "return-type": "json",
+    "interval": "once",
+    "exec": "$HOME/.config/waybar/modules/waycap/waycap.sh",
+    "on-click": "$HOME/.config/waybar/modules/waycap/waycap.sh menu",
+    "on-click-right": "$HOME/.config/waybar/modules/waycap/waycap.sh screenshot_region",
+    "signal": 10,
+    "tooltip": true,
+    "escape": false
+}
+*/ 

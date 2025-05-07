@@ -1,4 +1,0 @@
-[filechooser]
-cmd=yazi-wrapper.sh
-default_dir=$HOME/Downloads
-env=TERMCMD=ghostty

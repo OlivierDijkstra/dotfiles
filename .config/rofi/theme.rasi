@@ -1,16 +1,13 @@
-/* ROUNDED THEME FOR ROFI WITH GLOBAL COLORS */
-/* Author: Newman Sanchez (https://github.com/newmanls) */
-
 * {
     /* Import global colors */
-    bg0:    rgba(16, 16, 16, 0.80);  /* background */
-    bg1:    rgba(22, 22, 22, 1);     /* background-alt */
-    bg2:    rgba(69, 71, 90, 0.5);   /* background-highlight with transparency */
-    bg3:    rgba(255, 207, 168, 1); /* primary */
-    fg0:    rgba(160, 160, 160, 1);  /* foreground */
-    fg1:    rgba(255, 255, 255, 1);  /* bright white */
-    fg2:    rgba(101, 115, 126, 1);  /* foreground-subtle */
-    fg3:    rgba(80, 80, 80, 1);  /* border-dark */
+    bg0:    rgba(29, 29, 29, 0.95);   /* background */
+    bg1:    rgba(60, 60, 60, 1);      /* background-alt */
+    bg2:    rgba(75, 75, 75, 0.5);    /* background-highlight with transparency */
+    bg3:    rgba(198, 198, 198, 1);   /* primary accent */
+    fg0:    rgba(235, 235, 235, 1);   /* foreground */
+    fg1:    rgba(255, 255, 255, 1);   /* bright white */
+    fg2:    rgba(204, 204, 204, 1);   /* foreground-subtle */
+    fg3:    rgba(120, 120, 120, 1);   /* border-dark */
 }
 
 * {

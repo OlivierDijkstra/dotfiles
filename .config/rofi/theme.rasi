@@ -14,7 +14,7 @@
 }
 
 * {
-    font:   "JetBrainsMono Nerd Font 14";
+    font:   "Geist 14";
 
     background-color:   transparent;
     text-color:         @fg0;

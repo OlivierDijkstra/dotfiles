@@ -1,0 +1,419 @@
+// Font configuration - easy to change
+$primary-font: "JetBrains Mono Nerd Font", "JetBrains Mono", "Fira Code Nerd Font", monospace;
+
+// Clean pill-shaped finder bar styles following working GTK3 patterns
+$bg-translucent: rgba(10, 10, 10, 0.8);
+$bg-primary: rgba(30, 30, 30, 0.75);
+$bg-muted: rgba(23, 23, 23, 0.75);
+$bg-secondary: rgba(255, 255, 255, 0.15);
+$border-color: rgba(47, 47, 47, 1);
+$fg-primary: #ffffff;
+$fg-active: #E5E5E5;
+$fg-inactive: #808080;
+
+$border-radius-sm: 6px;
+$border-radius: 12px;
+$border-radius-lg: 24px;
+
+* {
+  all: unset;
+  font-family: $primary-font;
+  color: $fg-primary;
+}
+
+window.Bar {
+  background: transparent;
+  font-size: 15px;
+}
+
+.pill-bar {
+  padding: 4px;
+  
+  & > centerbox {
+    background: $bg-translucent;
+    border-radius: $border-radius-lg;
+    padding: 4px 0px;
+    margin: 0 4px;
+    min-height: 32px;
+    border: 1px solid $border-color;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.left-section,
+.right-section {
+  margin: 0 6px;
+}
+
+.center-section {
+  margin: 0 12px;
+}
+
+.time-label {
+  color: $fg-primary;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  padding: 6px 0;
+}
+
+.button {
+  background: transparent;
+  border-radius: 999999px;
+  transition: all 0.2s ease;
+
+  & > *:first-child {
+    margin-left: 15px;
+  }
+
+  & > *:last-child {
+    margin-right: 15px;
+  }
+
+  &:hover {
+    background: $bg-primary;
+  }
+
+  &:active {
+    background: $bg-secondary;
+  }
+}
+
+// Workspace indicators
+.workspaces-container {
+  background: transparent;
+}
+
+.workspaces {
+  background: transparent;
+}
+
+.workspace {
+  background: transparent;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  min-width: 32px;
+  min-height: 32px;
+  
+  &:hover {
+    background: $bg-primary;
+  }
+  
+  &.occupied {
+    background: rgba(255, 255, 255, 0.1);
+
+    &:hover {
+      background: $bg-primary;
+    }
+  }
+  
+  &.active {
+    background: $bg-secondary;
+    
+    .workspace-number {
+      color: $fg-primary;
+      font-weight: 700;
+    }
+    
+    &:hover {
+      background: $bg-secondary;
+    }
+  }
+}
+
+.workspace-indicator {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.workspace-number {
+  color: $fg-inactive;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+// Control Panel Popup Styles
+window.popup-window.control-panel {
+  background: transparent;
+}
+
+.control-panel-container {
+  background: $bg-translucent;
+  border-radius: $border-radius * 2;
+  padding: 16px;
+  border: 1px solid $border-color;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.control-row {
+  // Make the row a flex container
+  
+  & > * {
+    margin: 0 3px;
+  }
+  
+  & > *:first-child {
+    margin-left: 0;
+  }
+  
+  & > *:last-child {
+    margin-right: 0;
+  }
+
+  // Special handling for pill service buttons
+  .pill-service-button {
+    // flex: 1;
+    min-width: 0; // Allow buttons to shrink
+  }
+}
+
+.control-button {
+  background: transparent;
+  border-radius: $border-radius-sm;
+  min-width: 32px;
+  transition: all 0.2s ease;
+  font-size: 20px;
+  font-weight: 500;
+  
+  &:hover {
+    background: $bg-primary;
+  }
+  
+  &:active {
+    background: $bg-secondary;
+  }
+}
+
+.control-slider {
+  min-height: 24px;
+  
+  trough {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: $border-radius-sm;
+    min-height: 16px;
+    border: none;
+  }
+  
+  highlight {
+    background: $fg-primary;
+    border-radius: $border-radius-sm;
+    min-height: 16px;
+    border: none;
+  }
+  
+  slider {
+    background: $fg-primary;
+    border-radius: 50%;
+    min-width: 24px;
+    min-height: 24px;
+    margin: -4px 0;
+    border: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    
+    &:hover {
+      background: $fg-primary;
+      opacity: 0.9;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+    
+    &:active {
+      background: $fg-primary;
+    }
+  }
+}
+
+.pill-service-button {
+  background: transparent;
+  border-radius: $border-radius-lg;
+  padding: 0px 12px;
+  min-height: 56px;
+  transition: all 0.3s ease;
+  border: 1px solid $border-color;
+
+  &.enabled {
+    background: $fg-active;
+    color: #000000;
+    border: 1px solid $fg-active;
+    box-shadow: 0 4px 16px rgba(229, 229, 229, 0.3);
+
+    .service-icon {
+      color: #000000;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .service-title {
+      color: #000000;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .service-status {
+      color: rgba(0, 0, 0, 0.7);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    &:hover {
+      background: $fg-active;
+      box-shadow: 0 6px 20px rgba(229, 229, 229, 0.4);
+    }
+
+    &:active {
+      background: $fg-active;
+      box-shadow: 0 2px 8px rgba(229, 229, 229, 0.3);
+    }
+  }
+
+  &.disabled {
+    background: rgba(128, 128, 128, 0.2);
+    color: rgba(255, 255, 255, 0.5);
+    border: 1px solid $border-color;
+
+    .service-icon {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .service-title {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .service-status {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    &:hover {
+      background: rgba(128, 128, 128, 0.3);
+      color: rgba(255, 255, 255, 0.7);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+
+      .service-icon {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .service-title {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .service-status {
+        color: rgba(255, 255, 255, 0.6);
+      }
+    }
+
+    &:active {
+      background: rgba(128, 128, 128, 0.25);
+    }
+  }
+}
+
+// Compact actions row styles
+.compact-actions-row {
+  padding: 8px 0;
+}
+
+.compact-service-button {
+  background: transparent;
+  border-radius: 50%;
+  min-width: 40px;
+  min-height: 40px;
+  transition: all 0.3s ease;
+  border: 1px solid $border-color;
+
+  &.enabled {
+    background: $fg-active;
+    border: 1px solid $fg-active;
+    box-shadow: 0 4px 16px rgba(229, 229, 229, 0.3);
+
+    .compact-service-icon {
+      color: #000000;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    &:hover {
+      background: $fg-active;
+      box-shadow: 0 6px 20px rgba(229, 229, 229, 0.4);
+    }
+
+    &:active {
+      background: $fg-active;
+      box-shadow: 0 2px 8px rgba(229, 229, 229, 0.3);
+    }
+  }
+
+  &.disabled {
+    background: rgba(128, 128, 128, 0.2);
+    border: 1px solid $border-color;
+
+    .compact-service-icon {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    &:hover {
+      background: rgba(128, 128, 128, 0.3);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+
+      .compact-service-icon {
+        color: rgba(255, 255, 255, 0.8);
+      }
+    }
+
+    &:active {
+      background: rgba(128, 128, 128, 0.25);
+    }
+  }
+}
+
+.compact-service-icon {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+// Temperature control styles
+.temp-label {
+  color: $fg-primary;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.temp-value {
+  color: $fg-active;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.temp-range-label {
+  color: $fg-inactive;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
+
+.temp-description {
+  color: $fg-active;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  opacity: 0.9;
+}
+
+.icon-fix {
+  &>label {
+    padding-right: 3px;
+  }
+}
+
+label.icon-fix {
+  padding-right: 3px;
+}

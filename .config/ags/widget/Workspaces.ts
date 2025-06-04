@@ -21,7 +21,7 @@ export function Workspaces(): Gtk.Widget {
 					.map((workspace) => {
 						const isActive = Variable.derive(
 							[bind(hyprland, "focusedWorkspace")],
-							(focusedWs) => focusedWs.id === workspace.id,
+							(focusedWs) => focusedWs?.id === workspace.id,
 						);
 
 						const hasClients = Variable.derive(

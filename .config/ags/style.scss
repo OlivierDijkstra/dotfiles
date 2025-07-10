@@ -376,6 +376,41 @@ window.popup-window.control-panel {
   min-height: 40px;
 }
 
+// Audio devices section
+.audio-devices-toggle {
+  background: transparent;
+  border-radius: $border-radius-sm;
+  min-height: 32px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: $bg-primary;
+  }
+  
+  &:active {
+    background: $bg-secondary;
+  }
+}
+
+.audio-device-item {
+  background: transparent;
+  border-radius: $border-radius-sm;
+  min-height: 28px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: $bg-primary;
+  }
+  
+  &:active {
+    background: $bg-secondary;
+  }
+  
+  &.selected {
+    background: $bg-secondary;
+  }
+}
+
 
 
 .icon-fix {

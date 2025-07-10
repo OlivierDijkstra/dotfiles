@@ -27,7 +27,6 @@ export const ControlPanel = (mon: number) =>
 				// Volume section
 				new Widget.Box({
 					className: "control-row",
-					spacing: 6,
 					children: (() => {
 						const sink = Wireplumber.getDefault().getDefaultSink();
 						return [
@@ -50,10 +49,99 @@ export const ControlPanel = (mon: number) =>
 						];
 					})(),
 				}),
+				// Audio devices toggleable list
+				(() => {
+					let isExpanded = false;
+					const wireplumber = Wireplumber.getDefault();
+					const expandedState = Variable(false);
+					// Poll the default sink id every 500ms for reactivity
+					const defaultSinkId = Variable("").poll(500, () =>
+						String(wireplumber.getDefaultSink().id),
+					);
+					return new Widget.Box({
+						className: "audio-devices-section",
+						orientation: Gtk.Orientation.VERTICAL,
+						spacing: 2,
+						children: [
+							// Toggle button
+							new Widget.Button({
+								className: "audio-devices-toggle padded-toggle",
+								onClick: () => {
+									isExpanded = !isExpanded;
+									expandedState.set(isExpanded);
+								},
+								child: new Widget.Box({
+									orientation: Gtk.Orientation.HORIZONTAL,
+									spacing: 8,
+									children: [
+										new Widget.Label({
+											label: "Audio Devices",
+											className: "toggle-label",
+											hexpand: true,
+											halign: Gtk.Align.START,
+										}),
+										new Widget.Label({
+											label: bind(expandedState).as((expanded) =>
+												expanded ? "" : "",
+											), // chevron-down/up
+											className: "toggle-arrow",
+										}),
+									],
+								}),
+							} as Widget.ButtonProps),
+							// Expandable device list (reactive)
+							new Widget.Revealer({
+								className: "audio-devices-list",
+								revealChild: bind(expandedState),
+								transitionType: Gtk.RevealerTransitionType.SLIDE_DOWN,
+								child: bind(defaultSinkId).as(() => {
+									const sinks = wireplumber.getAllSinks();
+									const defaultSink = wireplumber.getDefaultSink();
+									return new Widget.Box({
+										className: "devices-container",
+										orientation: Gtk.Orientation.VERTICAL,
+										spacing: 1,
+										children: sinks.map((sink) => {
+											const isDefault = sink.id === defaultSink.id;
+											return new Widget.Button({
+												className: `audio-device-item${isDefault ? " selected" : ""}`,
+												onClick: () => {
+													if (sink.id) {
+														execAsync([
+															"wpctl",
+															"set-default",
+															sink.id.toString(),
+														]);
+													}
+												},
+												child: new Widget.Box({
+													orientation: Gtk.Orientation.HORIZONTAL,
+													spacing: 8,
+													children: [
+														new Widget.Label({
+															label: isDefault ? "󰕾" : " ",
+															className: "device-icon",
+														}),
+														new Widget.Label({
+															label: sink.description || "Output",
+															className: "device-name",
+															hexpand: true,
+															halign: Gtk.Align.START,
+														}),
+													],
+												}),
+											} as Widget.ButtonProps);
+										}),
+									});
+								}),
+							} as Widget.RevealerProps),
+						],
+					});
+				})(),
 				// Microphone section
 				new Widget.Box({
 					className: "control-row",
-					spacing: 6,
+					// spacing: 2, // Further reduced spacing
 					children: (() => {
 						const source = Wireplumber.getDefault().getDefaultSource();
 						return [

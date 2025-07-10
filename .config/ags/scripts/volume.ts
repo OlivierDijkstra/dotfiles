@@ -3,6 +3,25 @@ import { GObject, register } from "astal";
 
 export { WireplumberClass as Wireplumber };
 
+// Define interfaces for Wireplumber nodes
+interface WireplumberNode {
+	media_class?: number;
+	"media-class"?: number;
+	path?: string;
+	direction?: number;
+	id?: number;
+	description?: string;
+	set_default?: () => void;
+}
+
+interface WireplumberSink extends WireplumberNode {
+	// Additional sink-specific properties
+}
+
+interface WireplumberSource extends WireplumberNode {
+	// Additional source-specific properties
+}
+
 @register({ GTypeName: "Wireplumber" })
 class WireplumberClass extends GObject.Object {
 	private static astalWireplumber: AstalWp.Wp | null = AstalWp.get_default();
@@ -48,6 +67,35 @@ class WireplumberClass extends GObject.Object {
 			throw new Error("Default source not found");
 		}
 		return this.defaultSource;
+	}
+
+	public get sinks(): WireplumberSink[] {
+		if (!WireplumberClass.astalWireplumber) return [];
+		const nodes = Array.from(
+			WireplumberClass.astalWireplumber.get_nodes?.() || [],
+		);
+		// Only output devices: media_class === 2 or path contains 'playback'
+		return nodes.filter((node: WireplumberNode) => {
+			if (typeof node.media_class !== "undefined") {
+				return node.media_class === 2;
+			}
+			if (typeof node["media-class"] !== "undefined") {
+				return node["media-class"] === 2;
+			}
+			if (typeof node.path === "string") {
+				return node.path.includes("playback");
+			}
+			return false;
+		});
+	}
+
+	public get sources(): WireplumberSource[] {
+		if (!WireplumberClass.astalWireplumber) return [];
+		const nodes = Array.from(
+			WireplumberClass.astalWireplumber.get_nodes?.() || [],
+		);
+		const sources = nodes.filter((n: WireplumberNode) => n.direction === 0);
+		return sources;
 	}
 
 	public getSinkVolume(): number {
@@ -102,5 +150,20 @@ class WireplumberClass extends GObject.Object {
 	public toggleMuteSource(): void {
 		const source = this.getDefaultSource();
 		source.set_mute(!source.get_mute());
+	}
+
+	// Returns an array of all available output endpoints (sinks)
+	public getAllSinks(): WireplumberSink[] {
+		return this.sinks;
+	}
+
+	// Sets the default output endpoint (sink) by object
+	public setDefaultSink(sink: WireplumberSink): void {
+		if (!WireplumberClass.astalWireplumber) return;
+		// Try to set the default sink using the endpoint's set_default method if available
+		if (typeof sink.set_default === "function") {
+			sink.set_default();
+			this.defaultSink = sink as unknown as AstalWp.Endpoint;
+		}
 	}
 }

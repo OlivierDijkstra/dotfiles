@@ -376,35 +376,7 @@ window.popup-window.control-panel {
   min-height: 40px;
 }
 
-// Temperature control styles
-.temp-label {
-  color: $fg-primary;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-}
 
-.temp-value {
-  color: $fg-active;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-
-.temp-range-label {
-  color: $fg-inactive;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.1px;
-}
-
-.temp-description {
-  color: $fg-active;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-  opacity: 0.9;
-}
 
 .icon-fix {
   &>label {

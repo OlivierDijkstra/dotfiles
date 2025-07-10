@@ -14,11 +14,13 @@ function createBar(monitor: number) {
 			try {
 				existingBar?.destroy();
 			} catch (error) {
-				print(`Warning: Could not destroy existing bar for monitor ${monitor}: ${error}`);
+				print(
+					`Warning: Could not destroy existing bar for monitor ${monitor}: ${error}`,
+				);
 			}
 			barWindows.delete(monitor);
 		}
-		
+
 		// Create new bar
 		const bar = Bar(monitor);
 		barWindows.set(monitor, bar);
@@ -33,20 +35,22 @@ function createBar(monitor: number) {
 function recreateBarsWithRetry(retryCount = 0, maxRetries = 5) {
 	try {
 		const monitors = App.get_monitors();
-		
+
 		if (monitors.length === 0 && retryCount < maxRetries) {
-			print(`No monitors detected (attempt ${retryCount + 1}/${maxRetries}), retrying in 200ms...`);
+			print(
+				`No monitors detected (attempt ${retryCount + 1}/${maxRetries}), retrying in 200ms...`,
+			);
 			setTimeout(() => recreateBarsWithRetry(retryCount + 1, maxRetries), 200);
 			return;
 		}
-		
+
 		if (monitors.length === 0) {
 			print("No monitors detected after maximum retries");
 			return;
 		}
-		
+
 		print(`Recreating bars for ${monitors.length} monitors...`);
-		
+
 		// Clear all existing bars first
 		barWindows.forEach((bar, monitor) => {
 			try {
@@ -57,14 +61,14 @@ function recreateBarsWithRetry(retryCount = 0, maxRetries = 5) {
 			}
 		});
 		barWindows.clear();
-		
+
 		// Create new bars
 		monitors.forEach((_, i) => createBar(i));
-		
+
 		print(`Successfully recreated bars for ${monitors.length} monitors`);
 	} catch (error) {
 		print(`Error in recreateBarsWithRetry: ${error}`);
-		
+
 		// If we still have retries left, try again
 		if (retryCount < maxRetries) {
 			setTimeout(() => recreateBarsWithRetry(retryCount + 1, maxRetries), 500);
@@ -82,7 +86,7 @@ App.start({
 	main() {
 		// Create initial bars
 		App.get_monitors().forEach((_, i) => createBar(i));
-		
+
 		// Monitor for display changes
 		const display = App.get_monitors()[0]?.get_display();
 		if (display) {
@@ -91,14 +95,16 @@ App.start({
 				// Larger delay to ensure monitor is fully ready
 				setTimeout(handleMonitorChange, 500);
 			});
-			
+
 			display.connect("monitor-removed", () => {
 				print("Monitor removed event detected");
 				// Immediate response to removal
 				setTimeout(handleMonitorChange, 100);
 			});
 		}
-		
-		print(`AGS started with monitor handling for ${App.get_monitors().length} monitors`);
+
+		print(
+			`AGS started with monitor handling for ${App.get_monitors().length} monitors`,
+		);
 	},
 });

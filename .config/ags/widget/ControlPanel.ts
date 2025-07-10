@@ -5,7 +5,6 @@ import { Astal, Gtk, Widget } from "astal/gtk3";
 import { DockerService } from "../scripts/docker";
 import { NotificationService } from "../scripts/notification";
 import { RecordingService } from "../scripts/recording";
-import { TemperatureService } from "../scripts/temperature";
 import { Wireplumber } from "../scripts/volume";
 import { PopupWindow, type PopupWindowProps } from "./PopupWindow";
 import { DynamicServiceButton, ServiceButton } from "./ServiceButton";
@@ -473,125 +472,6 @@ export const ControlPanel = (mon: number) =>
 							() => NotificationService.getDefault().toggleDoNotDisturb(),
 						),
 					],
-				}),
-				// Temperature section
-				new Widget.Box({
-					className: "control-row",
-					spacing: 6,
-					children: (() => {
-						const tempService = TemperatureService.getDefault();
-						return [
-							new Widget.Button({
-								className: "control-button",
-								label: bind(tempService, "enabled").as((enabled) =>
-									enabled ? "󰌵" : "󰌶",
-								),
-								onClick: () => tempService.toggleEnabled(),
-								tooltipText: "Toggle screen temperature filter",
-							} as Widget.ButtonProps),
-							new Widget.Box({
-								orientation: Gtk.Orientation.VERTICAL,
-								spacing: 4,
-								hexpand: true,
-								children: [
-									new Widget.Box({
-										orientation: Gtk.Orientation.HORIZONTAL,
-										spacing: 8,
-										children: [
-											new Widget.Label({
-												label: "Screen Temperature",
-												className: "temp-label",
-												halign: Gtk.Align.START,
-												hexpand: true,
-											}),
-											new Widget.Label({
-												label: bind(tempService, "temperature").as(
-													(temp) => `${temp}K`,
-												),
-												className: "temp-value",
-												halign: Gtk.Align.END,
-											}),
-										],
-									}),
-									new Widget.Slider({
-										className: "control-slider",
-										drawValue: false,
-										hexpand: true,
-										max: 100,
-										setup: (slider) => {
-											// Set initial value based on current temperature
-											const initialPercent =
-												((tempService.temperature -
-													TemperatureService.MIN_TEMP) /
-													(TemperatureService.MAX_TEMP -
-														TemperatureService.MIN_TEMP)) *
-												100;
-											slider.value = initialPercent;
-
-											// Bind to temperature changes and store the connection ID
-											const signalId = tempService.connect(
-												"notify::temperature",
-												() => {
-													// Check if slider is still valid before updating
-													if (!slider.destroyed) {
-														const newPercent =
-															((tempService.temperature -
-																TemperatureService.MIN_TEMP) /
-																(TemperatureService.MAX_TEMP -
-																	TemperatureService.MIN_TEMP)) *
-															100;
-														slider.value = newPercent;
-													}
-												},
-											);
-
-											// Disconnect the signal when slider is destroyed
-											slider.connect("destroy", () => {
-												tempService.disconnect(signalId);
-											});
-										},
-										onDragged: (slider) => {
-											const temp =
-												TemperatureService.MIN_TEMP +
-												(slider.value / 100) *
-													(TemperatureService.MAX_TEMP -
-														TemperatureService.MIN_TEMP);
-											tempService.setTemperature(temp);
-										},
-									} as Widget.SliderProps),
-									new Widget.Box({
-										orientation: Gtk.Orientation.HORIZONTAL,
-										spacing: 4,
-										children: [
-											new Widget.Label({
-												label: "2000K",
-												className: "temp-range-label",
-												halign: Gtk.Align.START,
-												hexpand: true,
-											}),
-											new Widget.Label({
-												label: bind(tempService, "temperature").as((temp) => {
-													if (temp <= 2500) return "Very Warm";
-													if (temp <= 3500) return "Warm";
-													if (temp <= 4500) return "Neutral";
-													if (temp <= 5500) return "Cool";
-													return "Daylight";
-												}),
-												className: "temp-description",
-												halign: Gtk.Align.CENTER,
-											}),
-											new Widget.Label({
-												label: "6500K",
-												className: "temp-range-label",
-												halign: Gtk.Align.END,
-												hexpand: true,
-											}),
-										],
-									}),
-								],
-							}),
-						];
-					})(),
 				}),
 			],
 		} as Widget.BoxProps),

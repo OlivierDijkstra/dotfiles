@@ -1,6 +1,6 @@
 font-size = 14
 
-theme = Mellifluous
+theme = nord
 font-family = GeistMono
 keybind = ctrl+v=paste_from_clipboard
 

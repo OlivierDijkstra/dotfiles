@@ -22,3 +22,18 @@ map({ "n", "v" }, "L", "w", { desc = "Jump to next word" })
 map("n", "<C-p>", function()
   require("command-palette").open()
 end, { desc = "Command Palette" })
+
+-- Window navigation (works everywhere including Neo-tree)
+map("n", "<A-h>", "<C-w>h", { desc = "Go to left window" })
+map("n", "<A-l>", "<C-w>l", { desc = "Go to right window" })
+map("n", "<A-k>", "<C-w>k", { desc = "Go to upper window" })
+map("n", "<A-j>", "<C-w>j", { desc = "Go to lower window" })
+
+-- Alternative: Use leader + hjkl for window navigation
+map("n", "<leader>wh", "<C-w>h", { desc = "Window left" })
+map("n", "<leader>wl", "<C-w>l", { desc = "Window right" })
+map("n", "<leader>wk", "<C-w>k", { desc = "Window up" })
+map("n", "<leader>wj", "<C-w>j", { desc = "Window down" })
+
+-- Quick window cycling
+map("n", "<A-Tab>", "<C-w>w", { desc = "Cycle through windows" })

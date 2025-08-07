@@ -136,6 +136,8 @@ function M.open()
   local current_mode = "files"
   local current_menu = nil
   local selected_index = 1
+  local augroup = nil
+  local check_and_close = nil
   
   -- Input component - position higher up so the whole palette is centered
   local input = Input({
@@ -269,6 +271,18 @@ function M.open()
       
       current_menu:mount()
       M.menu = current_menu
+      
+      -- Add autocmd for menu window to close on focus loss
+      if augroup then
+        vim.api.nvim_create_autocmd("WinLeave", {
+          group = augroup,
+          buffer = current_menu.bufnr,
+          callback = function()
+            -- Small delay to allow for navigation between palette windows
+            vim.defer_fn(check_and_close, 50)
+          end,
+        })
+      end
     end
   end
   
@@ -279,13 +293,55 @@ function M.open()
   -- Mount input
   input:mount()
   
+  -- Set up autocmd to close on focus loss
+  augroup = vim.api.nvim_create_augroup("CommandPaletteFocus", { clear = true })
+  
+  -- Function to check if we're still in palette
+  check_and_close = function()
+    if M.is_open then
+      local current_win = vim.api.nvim_get_current_win()
+      local is_in_palette = false
+      
+      -- Check if current window is input
+      if input and vim.api.nvim_win_is_valid(input.winid) and current_win == input.winid then
+        is_in_palette = true
+      end
+      
+      -- Check if current window is menu
+      if M.menu and vim.api.nvim_win_is_valid(M.menu.winid) and current_win == M.menu.winid then
+        is_in_palette = true
+      end
+      
+      -- If we're not in any palette window, close it
+      if not is_in_palette then
+        close_all()
+        vim.api.nvim_del_augroup_by_id(augroup)
+      end
+    end
+  end
+  
   -- Initialize with all files
   update_results("")
   
+  -- Set up autocmd only after palette is fully mounted
+  vim.schedule(function()
+    -- Close when leaving the input window
+    vim.api.nvim_create_autocmd("WinLeave", {
+      group = augroup,
+      buffer = input.bufnr,
+      callback = function()
+        -- Small delay to allow for navigation between palette windows
+        vim.defer_fn(check_and_close, 50)
+      end,
+    })
+  end)
+  
   -- Ensure input is focused
   vim.schedule(function()
-    vim.api.nvim_set_current_win(input.winid)
-    vim.cmd("startinsert")
+    if input and input.winid and vim.api.nvim_win_is_valid(input.winid) then
+      vim.api.nvim_set_current_win(input.winid)
+      vim.cmd("startinsert")
+    end
   end)
   
   -- Handle text changes for live filtering

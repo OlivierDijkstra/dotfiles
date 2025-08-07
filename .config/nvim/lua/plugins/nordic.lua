@@ -4,7 +4,10 @@ return {
   priority = 1000,
   config = function()
     require("nordic").setup({
-      transparent_bg = false,
+      transparent = {
+        bg = false,
+        float = false,
+      },
       bright_border = false,
       reduced_blue = true,
       swap_backgrounds = false,

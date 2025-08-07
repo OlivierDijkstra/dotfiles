@@ -9,6 +9,7 @@ vim.g.maplocalleader = "\\"
 
 -- Essential options only
 opt.number = true -- Show line numbers
+opt.relativenumber = true -- Show relative line numbers
 opt.mouse = "a" -- Enable mouse
 opt.ignorecase = true -- Ignore case in search
 opt.smartcase = true -- Override ignorecase if uppercase used

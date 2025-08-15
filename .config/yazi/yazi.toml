@@ -1,16 +1,3 @@
-[manager]
-show_hidden=true
-
-[preview]
-max_width=1920
-max_height=1080
-
-[plugin]
-  prepend_preloaders = [
-    { mime = "{audio,video,image}/*", run = "mediainfo" },
-    { mime = "application/subrip", run = "mediainfo" },
-  ]
-  prepend_previewers = [
-    { mime = "{audio,video,image}/*", run = "mediainfo"},
-    { mime = "application/subrip", run = "mediainfo" },
-  ]
+# yazi.toml
+[mgr]
+show_hidden = true

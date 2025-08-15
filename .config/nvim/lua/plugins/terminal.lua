@@ -21,6 +21,7 @@ return {
         persist_size = true,
         persist_mode = true,
         direction = "horizontal",
+        auto_scroll = true,
         close_on_exit = false,
         shell = vim.o.shell,
         float_opts = {
@@ -40,6 +41,11 @@ return {
       end
 
       vim.cmd("autocmd! TermOpen term://* lua set_terminal_keymaps()")
+      
+      -- Force horizontal terminal
+      vim.keymap.set("n", "<C-j>", function()
+        vim.cmd("ToggleTerm direction=horizontal")
+      end, { desc = "Toggle horizontal terminal" })
     end,
   },
 }

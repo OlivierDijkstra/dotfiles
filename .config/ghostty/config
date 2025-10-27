@@ -1,6 +1,6 @@
-font-size = 14
+font-size = 16
 
-theme = Nord
+theme = Vesper
 font-family = GeistMono
 keybind = ctrl+v=paste_from_clipboard
 

@@ -30,3 +30,5 @@ opt.shiftround = true -- Round indent to multiple of shiftwidth
 opt.wrap = false -- Disable line wrap
 opt.breakindent = true -- Enable break indent
 opt.linebreak = true -- Wrap lines at convenient points
+
+opt.termguicolors = false

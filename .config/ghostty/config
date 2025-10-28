@@ -1,7 +1,67 @@
+# font-size = 16
+
+# theme = Vesper
+# font-family = GeistMono
+# keybind = ctrl+v=paste_from_clipboard
+
+# resize-overlay = never
+
+# window-decoration = client
+window-decoration = false
+window-padding-x = 16
+window-padding-y = 16
+background-opacity = 0.78
+
+gtk-single-instance=true
+quit-after-last-window-closed=false
+# initial-window=false
+
+font-family = JetBrainsMono Nerd Font Mono
+
 font-size = 16
 
 theme = Vesper
-font-family = GeistMono
-keybind = ctrl+v=paste_from_clipboard
 
-resize-overlay = never
+# LIGHT MODE
+foreground = #222222
+background = #E0E0E0
+
+# map everything onto the same two greys
+palette = 0=#222222
+palette = 1=#555555
+palette = 2=#555555
+palette = 3=#555555
+palette = 4=#555555
+palette = 5=#555555
+palette = 6=#555555
+palette = 7=#888888
+palette = 8=#555555
+palette = 9=#666666
+palette = 10=#666666
+palette = 11=#666666
+palette = 12=#666666
+palette = 13=#666666
+palette = 14=#666666
+palette = 15=#FFFFFF
+
+# DARK MODE
+foreground = #E0E0E0
+background = #1A1A1A
+
+# map everything onto the same two greys (inverted)
+palette = 0=#E0E0E0
+palette = 1=#AAAAAA
+palette = 2=#AAAAAA
+palette = 3=#AAAAAA
+palette = 4=#AAAAAA
+palette = 5=#AAAAAA
+palette = 6=#AAAAAA
+palette = 7=#777777
+palette = 8=#AAAAAA
+palette = 9=#999999
+palette = 10=#999999
+palette = 11=#999999
+palette = 12=#999999
+palette = 13=#999999
+palette = 14=#999999
+palette = 15=#000000

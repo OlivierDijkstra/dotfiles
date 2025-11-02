@@ -1,0 +1,35 @@
+#!/usr/bin/env zsh
+
+# Simple screen recording script using wf-recorder and slurp
+# Usage: screenrecord [output-file]
+
+# Get output filename (default to timestamped file)
+OUTPUT_FILE="${1:-~/Videos/screenrecord-$(date +%Y%m%d-%H%M%S).mp4}"
+
+# Expand ~ to home directory
+OUTPUT_FILE="${OUTPUT_FILE/#\~/$HOME}"
+
+# Ensure output directory exists
+mkdir -p "$(dirname "$OUTPUT_FILE")"
+
+# Use slurp to select region
+REGION=$(slurp)
+
+# Check if user cancelled (slurp returns empty on cancel)
+if [[ -z "$REGION" ]]; then
+    echo "Selection cancelled."
+    exit 0
+fi
+
+# Start recording
+echo "Recording region: $REGION"
+echo "Press Ctrl+C to stop recording"
+wf-recorder -g "$REGION" -f "$OUTPUT_FILE"
+
+# Print completion message
+if [[ $? -eq 0 ]]; then
+    echo "Recording saved to: $OUTPUT_FILE"
+fi
+
+
+

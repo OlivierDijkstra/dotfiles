@@ -65,3 +65,4 @@ palette = 12=#999999
 palette = 13=#999999
 palette = 14=#999999
 palette = 15=#000000
+keybind = shift+enter=text:\x1b\r

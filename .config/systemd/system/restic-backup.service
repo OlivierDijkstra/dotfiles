@@ -1,0 +1,11 @@
+[Unit]
+Description=Restic full system backup to NAS
+After=network-online.target
+Wants=network-online.target
+RequiresMountsFor=/mnt/nasigoreng
+
+[Service]
+Type=oneshot
+ExecStart=/home/oli/dotfiles/scripts/restic-backup
+Nice=19
+IOSchedulingClass=idle

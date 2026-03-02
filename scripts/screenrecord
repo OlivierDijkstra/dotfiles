@@ -1,38 +1,39 @@
 #!/usr/bin/env zsh
 
-# Simple screen recording script using wf-recorder and slurp
-# Usage: screenrecord [output-file]
+# Toggle screen recording using wf-recorder and slurp
+# Press once to select region and start, press again to stop
+# Saves to ~/Videos/Recordings/
 
-# Get output filename (default to timestamped file)
-OUTPUT_FILE="${1:-~/Videos/screenrecord-$(date +%Y%m%d-%H%M%S).mp4}"
+RECORDING_DIR="$HOME/Videos/Recordings"
+PIDFILE="/tmp/screenrecord.pid"
+PATHFILE="/tmp/screenrecord.path"
 
-# Expand ~ to home directory
-OUTPUT_FILE="${OUTPUT_FILE/#\~/$HOME}"
-
-# Ensure output directory exists
-mkdir -p "$(dirname "$OUTPUT_FILE")"
-
-# Use slurp to select region
-REGION=$(slurp)
-
-# Check if user cancelled (slurp returns empty on cancel)
-if [[ -z "$REGION" ]]; then
-    echo "Selection cancelled."
+# Check if already recording
+if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    # Stop recording
+    kill "$(cat "$PIDFILE")"
+    OUTPUT_FILE="$(cat "$PATHFILE")"
+    rm -f "$PIDFILE" "$PATHFILE"
+    notify-send "Screen Recording" "Recording saved" -t 2000
+    xdg-open "$OUTPUT_FILE" &
     exit 0
 fi
 
-# Start recording
-echo "Recording region: $REGION"
-echo "Press Ctrl+C to stop recording"
-wf-recorder -g "$REGION" -f "$OUTPUT_FILE"
+# Start new recording
+mkdir -p "$RECORDING_DIR"
+OUTPUT_FILE="$RECORDING_DIR/recording-$(date +%Y%m%d-%H%M%S).mp4"
 
-# Print completion message
-if [[ $? -eq 0 ]]; then
-    echo "Recording saved to: $OUTPUT_FILE"
+# Select region with slurp
+REGION=$(slurp 2>/dev/null)
+
+# Check if user cancelled
+if [[ -z "$REGION" ]]; then
+    notify-send "Screen Recording" "Selection cancelled" -t 2000
+    exit 0
 fi
 
-
-
-
-
-
+# Start recording in background
+notify-send "Screen Recording" "Recording started..." -t 2000
+wf-recorder -g "$REGION" -r 60 -f "$OUTPUT_FILE" &
+echo $! > "$PIDFILE"
+echo "$OUTPUT_FILE" > "$PATHFILE"

@@ -1,0 +1,326 @@
+#!/usr/bin/env zsh
+
+# Toggle or enforce Hyprland monitor profiles for LG dual-mode displays.
+# Defaults are tuned for a DP-1 monitor supporting:
+# - 3840x2160@240 (desktop profile)
+# - 1920x1080@480 (gaming profile)
+
+set -eu
+
+OUTPUT="${HYPR_DUALMODE_OUTPUT:-DP-1}"
+MODE_4K="${HYPR_DUALMODE_MODE_4K:-3840x2160@240}"
+MODE_1080="${HYPR_DUALMODE_MODE_1080:-1920x1080@480}"
+SCALE_4K="${HYPR_DUALMODE_SCALE_4K:-1.2}"
+SCALE_1080="${HYPR_DUALMODE_SCALE_1080:-1.0}"
+POS="${HYPR_DUALMODE_POS:-auto}"
+ENABLE_NOTIFY="${HYPR_DUALMODE_NOTIFY:-1}"
+
+log_notify() {
+  local title="$1"
+  local body="$2"
+  if [[ "$ENABLE_NOTIFY" == "0" ]]; then
+    return 0
+  fi
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "$title" "$body" -t 2500
+  fi
+}
+
+require_tools() {
+  command -v hyprctl >/dev/null 2>&1 || {
+    echo "hypr-dual-mode: hyprctl is required" >&2
+    exit 1
+  }
+  command -v jq >/dev/null 2>&1 || {
+    echo "hypr-dual-mode: jq is required" >&2
+    exit 1
+  }
+}
+
+monitor_json() {
+  local json
+  json="$(hyprctl -j monitors 2>/dev/null || true)"
+
+  if [[ -z "$json" ]]; then
+    return 1
+  fi
+
+  if ! echo "$json" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    return 1
+  fi
+
+  echo "$json"
+}
+
+monitor_field() {
+  local field="$1"
+  local json
+
+  json="$(monitor_json)" || return 1
+  echo "$json" | jq -r --arg output "$OUTPUT" ".[] | select(.name == \$output) | ${field}" | head -n1
+}
+
+current_width() {
+  monitor_field '.width'
+}
+
+current_height() {
+  monitor_field '.height'
+}
+
+current_refresh() {
+  monitor_field '(.refreshRate | floor)'
+}
+
+current_scale() {
+  monitor_field '.scale'
+}
+
+available_modes() {
+  local json
+  json="$(monitor_json)" || return 1
+  echo "$json" | jq -r --arg output "$OUTPUT" '.[] | select(.name == $output) | .availableModes[]?'
+}
+
+detect_profile() {
+  local width
+  width="$(current_width 2>/dev/null || true)"
+
+  if [[ -z "$width" || "$width" == "null" ]]; then
+    echo "unknown"
+    return 1
+  fi
+
+  if (( width >= 3000 )); then
+    echo "4k"
+  else
+    echo "1080"
+  fi
+}
+
+detect_capability_profile() {
+  local modes has_4k has_480
+  modes="$(available_modes 2>/dev/null || true)"
+
+  if [[ -z "$modes" ]]; then
+    echo "unknown"
+    return 1
+  fi
+
+  has_4k=0
+  has_480=0
+
+  if echo "$modes" | grep -qE '^3840x2160@'; then
+    has_4k=1
+  fi
+
+  if echo "$modes" | grep -qE '^1920x1080@4[5-9][0-9](\.|$)|^1920x1080@[5-9][0-9]{2}(\.|$)'; then
+    has_480=1
+  fi
+
+  if [[ "$has_4k" -eq 1 && "$has_480" -eq 0 ]]; then
+    echo "4k"
+    return 0
+  fi
+
+  if [[ "$has_480" -eq 1 && "$has_4k" -eq 0 ]]; then
+    echo "1080"
+    return 0
+  fi
+
+  echo "unknown"
+  return 1
+}
+
+detect_desired_profile() {
+  case "$(detect_capability_profile 2>/dev/null || echo unknown)" in
+    4k)
+      echo "4k"
+      return 0
+      ;;
+    1080)
+      echo "1080"
+      return 0
+      ;;
+  esac
+
+  case "$(detect_profile 2>/dev/null || echo unknown)" in
+    4k)
+      echo "4k"
+      return 0
+      ;;
+    1080)
+      echo "1080"
+      return 0
+      ;;
+    *)
+      echo "unknown"
+      return 1
+      ;;
+  esac
+}
+
+apply_profile() {
+  local profile="$1"
+  local mode scale anim blur shadow
+
+  case "$profile" in
+    4k)
+      mode="$MODE_4K"
+      scale="$SCALE_4K"
+      anim="yes"
+      blur="yes"
+      shadow="yes"
+      ;;
+    1080)
+      mode="$MODE_1080"
+      scale="$SCALE_1080"
+      anim="no"
+      blur="no"
+      shadow="no"
+      ;;
+    *)
+      echo "hypr-dual-mode: unknown profile '$profile'" >&2
+      exit 2
+      ;;
+  esac
+
+  if ! hyprctl keyword monitor "$OUTPUT,$mode,$POS,$scale" >/dev/null; then
+    log_notify "Dual mode" "Failed to set $profile profile on $OUTPUT"
+    echo "hypr-dual-mode: failed to apply monitor mode '$mode' on '$OUTPUT'" >&2
+    exit 1
+  fi
+
+  # Keep rendering overhead aligned with the selected profile.
+  hyprctl keyword animations:enabled "$anim" >/dev/null || true
+  hyprctl keyword decoration:blur:enabled "$blur" >/dev/null || true
+  hyprctl keyword decoration:shadow:enabled "$shadow" >/dev/null || true
+
+  log_notify "Dual mode" "$OUTPUT -> $profile ($mode, scale $scale)"
+  echo "$OUTPUT -> $profile ($mode, scale $scale)"
+}
+
+print_status() {
+  local width height refresh scale profile desired
+  width="$(current_width 2>/dev/null || true)"
+  height="$(current_height 2>/dev/null || true)"
+  refresh="$(current_refresh 2>/dev/null || true)"
+  scale="$(current_scale 2>/dev/null || true)"
+  profile="$(detect_profile 2>/dev/null || echo unknown)"
+  desired="$(detect_desired_profile 2>/dev/null || echo unknown)"
+
+  if [[ -z "$width" || "$width" == "null" ]]; then
+    echo "hypr-dual-mode: could not query Hyprland monitors (is Hyprland running?)"
+    exit 1
+  fi
+
+  local mode_line status_body
+  mode_line="${width}x${height}@${refresh}"
+  status_body="Output: $OUTPUT | Mode: $mode_line | Scale: $scale | Profile: $profile | Desired: $desired"
+
+  echo "Output:  $OUTPUT"
+  echo "Mode:    $mode_line"
+  echo "Scale:   $scale"
+  echo "Profile: $profile"
+  echo "Desired: $desired"
+  log_notify "Dual mode status" "$status_body"
+}
+
+watch_profiles() {
+  local interval desired last_applied
+  interval="${HYPR_DUALMODE_WATCH_INTERVAL:-2}"
+  last_applied=""
+
+  while true; do
+    desired="$(detect_desired_profile 2>/dev/null || echo unknown)"
+
+    if [[ "$desired" == "4k" || "$desired" == "1080" ]]; then
+      if [[ "$desired" != "$last_applied" ]]; then
+        if apply_profile "$desired" >/dev/null 2>&1; then
+          last_applied="$desired"
+        fi
+      fi
+    fi
+
+    sleep "$interval"
+  done
+}
+
+usage() {
+  cat <<USAGE
+Usage: hypr-dual-mode [4k|1080|toggle|sync|status|detect|watch] [output]
+
+Examples:
+  hypr-dual-mode toggle
+  hypr-dual-mode 1080 DP-1
+  HYPR_DUALMODE_SCALE_4K=1.25 hypr-dual-mode 4k
+  HYPR_DUALMODE_WATCH_INTERVAL=1 hypr-dual-mode watch
+USAGE
+}
+
+main() {
+  require_tools
+
+  local action="${1:-toggle}"
+  if [[ $# -ge 2 ]]; then
+    OUTPUT="$2"
+  fi
+
+  case "$action" in
+    4k)
+      apply_profile "4k"
+      ;;
+    1080)
+      apply_profile "1080"
+      ;;
+    toggle)
+      case "$(detect_profile 2>/dev/null || echo unknown)" in
+        4k) apply_profile "1080" ;;
+        1080) apply_profile "4k" ;;
+        *)
+          echo "hypr-dual-mode: could not detect active profile for '$OUTPUT'" >&2
+          exit 1
+          ;;
+      esac
+      ;;
+    sync)
+      case "$(detect_desired_profile 2>/dev/null || echo unknown)" in
+        4k) apply_profile "4k" ;;
+        1080) apply_profile "1080" ;;
+        *)
+          echo "hypr-dual-mode: could not detect active profile for '$OUTPUT'" >&2
+          exit 1
+          ;;
+      esac
+      ;;
+    status)
+      print_status
+      ;;
+    detect)
+      case "$(detect_desired_profile 2>/dev/null || echo unknown)" in
+        4k)
+          echo "4k"
+          ;;
+        1080)
+          echo "1080"
+          ;;
+        *)
+          echo "hypr-dual-mode: could not detect active profile for '$OUTPUT'" >&2
+          exit 1
+          ;;
+      esac
+      ;;
+    watch)
+      watch_profiles
+      ;;
+    -h|--help|help)
+      usage
+      ;;
+    *)
+      usage >&2
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"

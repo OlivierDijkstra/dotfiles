@@ -16,13 +16,13 @@ border-size=2
 border-radius=5
 
 # Colors from theme
-background-color=#101010F2
-text-color=#FFFFFF
-border-color=#505050
-progress-color=#65737E
+background-color=#F3ECE3F2
+text-color=#2C2622
+border-color=#D8C8B7
+progress-color=#D66A52
 
 # Format
-format=<b>%s</b> <span color="#A0A0A0">(%a)</span>\n%b
+format=<b>%s</b> <span color="#7D7268">(%a)</span>\n%b
 
 # Icons
 icons=true
@@ -46,21 +46,21 @@ format=Hidden: %h [%t]
 
 # Urgency levels
 [urgency=low]
-text-color=#A0A0A0
+text-color=#7D7268
 default-timeout=10000
 
 [urgency=low actionable]
-border-color=#A0A0A0
+border-color=#C9B7A5
 
 [urgency=normal actionable]
-border-color=#65737E
+border-color=#D66A52
 
 [urgency=high]
-border-color=#FF8080
+border-color=#C75A44
 default-timeout=0
 
 [urgency=high actionable]
-border-color=#FFCFA8
+border-color=#D66A52
 
 # Group settings
 group-by=app-name,summary

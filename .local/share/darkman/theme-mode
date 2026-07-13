@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode="${1:-}"
+case "$mode" in
+  light|dark)
+    # Keep user-selected mode semantics (auto/manual) and only resync target.
+    exec /home/oli/dotfiles/scripts/theme-mode sync --quiet
+    ;;
+  *)
+    # Ignore unknown events.
+    exit 0
+    ;;
+esac

@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+CHECK_INTERVAL_SECONDS=5
+MISSING_THRESHOLD=3
+
+log() {
+  printf 'dynamic-island-watchdog: %s\n' "$*"
+}
+
+service_is_active() {
+  systemctl --user --quiet is-active dynamic-island.service
+}
+
+service_main_pid() {
+  systemctl --user show -p MainPID --value dynamic-island.service 2>/dev/null || true
+}
+
+hyprland_monitors_ready() {
+  local monitors_json
+
+  if ! monitors_json="$(hyprctl -j monitors 2>/dev/null)"; then
+    return 1
+  fi
+
+  printf '%s' "$monitors_json" |
+    jq -e 'map(.disabled == false and .dpmsStatus == true and (.activeWorkspace.name | length > 0)) | any' >/dev/null 2>&1
+}
+
+dynamic_island_layer_present() {
+  local main_pid="$1"
+  local layers_json
+
+  if [[ -z "$main_pid" || "$main_pid" == "0" ]]; then
+    return 1
+  fi
+
+  if ! layers_json="$(hyprctl -j layers 2>/dev/null)"; then
+    return 1
+  fi
+
+  printf '%s' "$layers_json" |
+    jq -e --argjson pid "$main_pid" '[.. | objects | select(.namespace? == "dynamic-island" and .pid? == $pid)] | length > 0' >/dev/null 2>&1
+}
+
+restart_dynamic_island() {
+  local main_pid="$1"
+
+  log "dynamic-island layer missing for $((CHECK_INTERVAL_SECONDS * MISSING_THRESHOLD))s with monitors ready, restarting service (pid=$main_pid)"
+  systemctl --user restart dynamic-island.service
+}
+
+missing_count=0
+
+while true; do
+  if ! service_is_active; then
+    missing_count=0
+    sleep "$CHECK_INTERVAL_SECONDS"
+    continue
+  fi
+
+  main_pid="$(service_main_pid)"
+
+  if ! hyprland_monitors_ready; then
+    missing_count=0
+    sleep "$CHECK_INTERVAL_SECONDS"
+    continue
+  fi
+
+  if dynamic_island_layer_present "$main_pid"; then
+    missing_count=0
+    sleep "$CHECK_INTERVAL_SECONDS"
+    continue
+  fi
+
+  ((missing_count += 1))
+
+  if (( missing_count >= MISSING_THRESHOLD )); then
+    restart_dynamic_island "$main_pid"
+    missing_count=0
+    sleep "$CHECK_INTERVAL_SECONDS"
+    continue
+  fi
+
+  sleep "$CHECK_INTERVAL_SECONDS"
+done

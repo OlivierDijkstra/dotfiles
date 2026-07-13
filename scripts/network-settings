@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+launch() {
+    "$@" >/dev/null 2>&1 &
+}
+
+if command -v nm-connection-editor >/dev/null 2>&1; then
+    launch nm-connection-editor
+    exit 0
+fi
+
+if command -v plasma-open-settings >/dev/null 2>&1; then
+    launch plasma-open-settings kcm_networkmanagement
+    exit 0
+fi
+
+if command -v gnome-control-center >/dev/null 2>&1; then
+    launch gnome-control-center wifi
+    exit 0
+fi
+
+printf '%s\n' "No supported network settings application was found." >&2
+exit 1

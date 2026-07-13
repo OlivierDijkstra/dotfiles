@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/dynamic-island"
+WAS_RUNNING_FILE="$STATE_DIR/was-running-before-sleep"
+
+mkdir -p "$STATE_DIR"
+rm -f "$WAS_RUNNING_FILE"
+
+log() {
+  printf 'dynamic-island-sleep-monitor: %s\n' "$*"
+}
+
+handle_sleep_signal() {
+  local sleeping="$1"
+
+  if [[ "$sleeping" == "true" ]]; then
+    if systemctl --user --quiet is-active dynamic-island.service; then
+      log "sleep detected, stopping dynamic-island.service"
+      : > "$WAS_RUNNING_FILE"
+      systemctl --user stop dynamic-island.service
+    else
+      log "sleep detected, dynamic-island.service already inactive"
+      rm -f "$WAS_RUNNING_FILE"
+    fi
+    return 0
+  fi
+
+  if [[ -f "$WAS_RUNNING_FILE" ]]; then
+    log "resume detected, starting dynamic-island.service"
+    rm -f "$WAS_RUNNING_FILE"
+    systemctl --user start dynamic-island.service
+  else
+    log "resume detected, nothing to restart"
+  fi
+}
+
+pending_prepare_for_sleep=0
+
+gdbus monitor \
+  --system \
+  --dest org.freedesktop.login1 \
+  --object-path /org/freedesktop/login1 |
+while IFS= read -r line; do
+  case "$line" in
+    *PrepareForSleep*true*|*PrepareForSleep*"(true"*)
+      handle_sleep_signal true
+      ;;
+    *PrepareForSleep*false*|*PrepareForSleep*"(false"*)
+      handle_sleep_signal false
+      ;;
+    *PrepareForSleep*)
+      pending_prepare_for_sleep=1
+      ;;
+    *boolean\ true*)
+      if (( pending_prepare_for_sleep )); then
+        pending_prepare_for_sleep=0
+        handle_sleep_signal true
+      fi
+      ;;
+    *boolean\ false*)
+      if (( pending_prepare_for_sleep )); then
+        pending_prepare_for_sleep=0
+        handle_sleep_signal false
+      fi
+      ;;
+  esac
+done

@@ -1,0 +1,23 @@
+# OS1-inspired warm palette
+foreground = #2C2622
+background = #F3ECE3
+cursor-color = #D66A52
+selection-background = #E8B7A8
+selection-foreground = #2C2622
+
+palette = 0=#2C2622
+palette = 1=#C75A44
+palette = 2=#8E9C75
+palette = 3=#C4935E
+palette = 4=#6F8FAF
+palette = 5=#AA7D8A
+palette = 6=#6D9C95
+palette = 7=#DCCFC2
+palette = 8=#7D7268
+palette = 9=#D66A52
+palette = 10=#9FAA84
+palette = 11=#D0A777
+palette = 12=#89A5C0
+palette = 13=#B68A99
+palette = 14=#7DAEA8
+palette = 15=#FFF8EF

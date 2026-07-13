@@ -1,0 +1,39 @@
+#!/usr/bin/env zsh
+
+PIDFILE="/tmp/screenrecord.pid"
+PATHFILE="/tmp/screenrecord.path"
+
+if [[ ! -f "$PIDFILE" ]]; then
+    print '{"recording": false}'
+    exit 0
+fi
+
+PID="$(<"$PIDFILE")"
+
+if [[ -z "$PID" ]] || ! kill -0 "$PID" 2>/dev/null; then
+    print '{"recording": false}'
+    exit 0
+fi
+
+ELAPSED_SECONDS="$(ps -o etimes= -p "$PID" | tr -d '[:space:]')"
+OUTPUT_PATH=""
+
+if [[ -f "$PATHFILE" ]]; then
+    OUTPUT_PATH="$(<"$PATHFILE")"
+fi
+
+python - "$PID" "${ELAPSED_SECONDS:-0}" "$OUTPUT_PATH" <<'PY'
+import json
+import sys
+
+pid = int(sys.argv[1])
+elapsed = int(sys.argv[2] or "0")
+output_path = sys.argv[3]
+
+print(json.dumps({
+    "recording": True,
+    "pid": pid,
+    "elapsedSeconds": elapsed,
+    "outputPath": output_path,
+}))
+PY

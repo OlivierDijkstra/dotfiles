@@ -1,0 +1,77 @@
+# OS1 Night warm, human-centric theme for Vicinae
+# Docs: https://docs.vicinae.com/theming/getting-started
+
+[meta]
+name = "os1-night"
+description = "Warm OS1 night palette"
+variant = "dark"
+inherits = "vicinae-dark"
+
+[colors.core]
+accent = "#D66A52"
+accent_foreground = "#FFF8EF"
+background = "#1E1A17"
+foreground = "#E8DED2"
+secondary_background = "#25201C"
+border = "#5A4F46"
+
+[colors.main_window]
+border = "colors.core.border"
+footer = { background = "colors.core.secondary_background" }
+
+[colors.settings_window]
+border = "colors.core.border"
+
+[colors.accents]
+blue = "#89A5C0"
+green = "#9FAA84"
+magenta = "#B68A99"
+orange = "#D0A777"
+red = "#D66A52"
+yellow = "#D0A777"
+cyan = "#7DAEA8"
+purple = "#B392A0"
+
+[colors.shortcut]
+border = "colors.core.border"
+
+[colors.text]
+default = "colors.core.foreground"
+muted = "#B9AA9D"
+danger = "#D66A52"
+success = "#9FAA84"
+placeholder = "#9E8F82"
+selection = { background = "#5A4F46", foreground = "#FFF8EF" }
+
+[colors.text.links]
+default = "#E8B7A8"
+visited = "#B68A99"
+
+[colors.input]
+border = "#5A4F46"
+border_focus = "#D66A52"
+border_error = "#D66A52"
+
+[colors.button.primary]
+background = "#D66A52"
+foreground = "#FFF8EF"
+hover = { background = "#C75A44" }
+focus = { outline = "#B85340" }
+
+[colors.list.item.selection]
+background = "#5A4F46"
+foreground = "#FFF8EF"
+secondary_background = "#2D2722"
+secondary_foreground = "#E8DED2"
+
+[colors.grid.item]
+background = "#25201C"
+hover = { outline = "#D66A52" }
+selection = { outline = "#D66A52" }
+
+[colors.scrollbars]
+background = "#5A4F46"
+
+[colors.loading]
+bar = "#D66A52"
+spinner = "#D66A52"

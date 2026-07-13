@@ -1,0 +1,10 @@
+# Basename matches
+AGENTS\.md
+CLAUDE\.md
+scripts
+skills
+\.claude
+\.git
+\.gitignore
+\.stow-global-ignore
+\.stow-local-ignore

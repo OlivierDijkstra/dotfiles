@@ -1,0 +1,589 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+HOME_DIR="${HOME:-/home/oli}"
+
+STATE_DIR="$HOME_DIR/.local/state/theme-mode"
+STATE_FILE="$STATE_DIR/state.json"
+LOCK_FILE="$STATE_DIR/lock"
+
+GHOSTTY_CONFIG="$HOME_DIR/.config/ghostty/config"
+GHOSTTY_THEME_DIR="$HOME_DIR/.config/ghostty/themes"
+GHOSTTY_THEME_SRC_DIR="$DOTFILES_DIR/.config/ghostty/themes"
+GHOSTTY_LIGHT_THEME="os1"
+GHOSTTY_DARK_THEME="os1-night"
+
+BTOP_CONFIG="$HOME_DIR/.config/btop/btop.conf"
+BTOP_THEME_DIR="$HOME_DIR/.config/btop/themes"
+BTOP_THEME_SRC_DIR="$DOTFILES_DIR/.config/btop/themes"
+BTOP_LIGHT_THEME="$HOME_DIR/.config/btop/themes/os1.theme"
+BTOP_DARK_THEME="$HOME_DIR/.config/btop/themes/os1-night.theme"
+
+VICINAE_SETTINGS="$HOME_DIR/.config/vicinae/settings.json"
+VICINAE_THEME_DIR="$HOME_DIR/.local/share/vicinae/themes"
+VICINAE_THEME_SRC_DIR="$DOTFILES_DIR/.local/share/vicinae/themes"
+VICINAE_LIGHT_THEME="os1"
+VICINAE_DARK_THEME="os1-night"
+
+YAZI_CONFIG_DIR="$HOME_DIR/.config/yazi"
+YAZI_THEME_FILE="$YAZI_CONFIG_DIR/theme.toml"
+YAZI_THEME_SRC_DIR="$DOTFILES_DIR/.config/yazi"
+YAZI_LIGHT_THEME_SRC="$YAZI_THEME_SRC_DIR/theme-light.toml"
+YAZI_DARK_THEME_SRC="$YAZI_THEME_SRC_DIR/theme-dark.toml"
+
+COLOR_DIR="$HOME_DIR/.config/theme"
+COLOR_CONF_ACTIVE="$COLOR_DIR/colors.conf"
+COLOR_CONF_LIGHT="$COLOR_DIR/colors-light.conf"
+COLOR_CONF_DARK="$COLOR_DIR/colors-dark.conf"
+
+HYPERPAPER_CONFIG="$HOME_DIR/.config/hypr/hyprpaper.conf"
+HYPERPAPER_LIGHT_WALLPAPER="$HOME_DIR/Pictures/wallpapers/OS1.png"
+HYPERPAPER_DARK_WALLPAPER="$HOME_DIR/Pictures/wallpapers/OS2.png"
+
+QUIET=0
+AUTO_SOURCE="clock"
+AUTO_TARGET="light"
+
+require_tools() {
+  command -v jq >/dev/null 2>&1 || {
+    echo "theme-mode: jq is required" >&2
+    exit 1
+  }
+}
+
+notify() {
+  local title="$1"
+  local body="$2"
+
+  if [[ "$QUIET" == "1" ]]; then
+    return 0
+  fi
+
+  if command -v notify-send >/dev/null 2>&1; then
+    notify-send "$title" "$body" -t 2200
+  fi
+}
+
+ensure_state() {
+  mkdir -p "$STATE_DIR"
+
+  if [[ ! -f "$STATE_FILE" ]]; then
+    jq -n \
+      --arg mode "auto" \
+      --arg applied "" \
+      --arg source "init" \
+      '{mode: $mode, applied: $applied, source: $source}' > "$STATE_FILE"
+  fi
+}
+
+state_mode() {
+  jq -r '.mode // "auto"' "$STATE_FILE"
+}
+
+state_applied() {
+  jq -r '.applied // ""' "$STATE_FILE"
+}
+
+state_source() {
+  jq -r '.source // "unknown"' "$STATE_FILE"
+}
+
+write_state() {
+  local mode="$1"
+  local applied="$2"
+  local source="$3"
+
+  jq -n \
+    --arg mode "$mode" \
+    --arg applied "$applied" \
+    --arg source "$source" \
+    '{mode: $mode, applied: $applied, source: $source}' > "$STATE_FILE"
+}
+
+replace_or_append_line() {
+  local file="$1"
+  local regex="$2"
+  local replacement="$3"
+
+  if grep -Eq "$regex" "$file"; then
+    sed -E -i "s|$regex.*|$replacement|" "$file"
+  else
+    printf '%s\n' "$replacement" >> "$file"
+  fi
+}
+
+sync_file_if_needed() {
+  local src="$1"
+  local dst="$2"
+  local src_real dst_real
+
+  [[ -f "$src" ]] || return 0
+  mkdir -p "$(dirname "$dst")"
+
+  src_real="$(readlink -f "$src" 2>/dev/null || true)"
+  dst_real="$(readlink -f "$dst" 2>/dev/null || true)"
+  if [[ -n "$src_real" && -n "$dst_real" && "$src_real" == "$dst_real" ]]; then
+    return 0
+  fi
+
+  cp "$src" "$dst"
+}
+
+safe_hyprctl_reload() {
+  if ! command -v hyprctl >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if hyprctl -j monitors >/dev/null 2>&1; then
+    hyprctl reload >/dev/null 2>&1 || true
+  fi
+}
+
+safe_vicinae_reload() {
+  if ! command -v vicinae >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if vicinae ping >/dev/null 2>&1; then
+    # Close lock fd before spawning background process so it won't inherit the flock.
+    ( exec 200>&-; vicinae server --replace >/dev/null 2>&1 & )
+  fi
+}
+
+safe_hyprpaper_reload() {
+  if ! command -v hyprpaper >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! command -v hyprctl >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if ! hyprctl -j monitors >/dev/null 2>&1; then
+    return 0
+  fi
+
+  pkill -x hyprpaper >/dev/null 2>&1 || true
+  # Close lock fd before spawning background process so it won't inherit the flock.
+  ( exec 200>&-; hyprpaper >/dev/null 2>&1 & )
+}
+
+set_gtk_mode() {
+  local mode="$1"
+  local scheme theme
+
+  if ! command -v gsettings >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ "$mode" == "dark" ]]; then
+    scheme="prefer-dark"
+    theme="adw-gtk3-dark"
+  else
+    scheme="prefer-light"
+    theme="adw-gtk3"
+  fi
+
+  gsettings set org.gnome.desktop.interface color-scheme "$scheme" >/dev/null 2>&1 || true
+  gsettings set org.gnome.desktop.interface gtk-theme "$theme" >/dev/null 2>&1 || true
+}
+
+set_ghostty_mode() {
+  replace_or_append_line "$GHOSTTY_CONFIG" '^theme[[:space:]]*=' \
+    "theme = light:$GHOSTTY_LIGHT_THEME,dark:$GHOSTTY_DARK_THEME"
+}
+
+set_btop_mode() {
+  local mode="$1"
+  local theme
+
+  if [[ "$mode" == "dark" ]]; then
+    theme="$BTOP_DARK_THEME"
+  else
+    theme="$BTOP_LIGHT_THEME"
+  fi
+
+  replace_or_append_line "$BTOP_CONFIG" '^color_theme[[:space:]]*=' "color_theme = \"$theme\""
+}
+
+set_vicinae_mode_map() {
+  # Vicinae settings are JSONC (comments allowed), so use text replacement.
+  perl -0777 -i -pe \
+    's/"light":\s*\{\s*"name":\s*"[^"]+"\s*\}/"light": {\n         "name": "'"$VICINAE_LIGHT_THEME"'"\n      }/s;
+     s/"dark":\s*\{\s*"name":\s*"[^"]+"\s*\}/"dark": {\n         "name": "'"$VICINAE_DARK_THEME"'"\n      }/s;' \
+    "$VICINAE_SETTINGS"
+}
+
+set_hypr_theme_colors() {
+  local mode="$1"
+
+  if [[ "$mode" == "dark" ]]; then
+    cp "$COLOR_CONF_DARK" "$COLOR_CONF_ACTIVE"
+  else
+    cp "$COLOR_CONF_LIGHT" "$COLOR_CONF_ACTIVE"
+  fi
+}
+
+set_yazi_mode() {
+  local mode="$1"
+  local src
+
+  if [[ "$mode" == "dark" ]]; then
+    src="$YAZI_DARK_THEME_SRC"
+  else
+    src="$YAZI_LIGHT_THEME_SRC"
+  fi
+
+  [[ -f "$src" ]] || return 0
+
+  mkdir -p "$YAZI_CONFIG_DIR"
+  cp "$src" "$YAZI_THEME_FILE"
+}
+
+set_hyprpaper_mode() {
+  local mode="$1"
+  local wallpaper
+
+  if [[ "$mode" == "dark" ]]; then
+    wallpaper="$HYPERPAPER_DARK_WALLPAPER"
+  else
+    wallpaper="$HYPERPAPER_LIGHT_WALLPAPER"
+  fi
+
+  [[ -f "$wallpaper" ]] || return 0
+
+  if [[ ! -f "$HYPERPAPER_CONFIG" ]]; then
+    mkdir -p "$(dirname "$HYPERPAPER_CONFIG")"
+    cat > "$HYPERPAPER_CONFIG" <<EOF
+splash = false
+
+wallpaper {
+    monitor =
+    path = $wallpaper
+    fit_mode = cover
+}
+EOF
+  else
+    sed -E -i "s|^([[:space:]]*path[[:space:]]*=[[:space:]]*).*$|\\1$wallpaper|" "$HYPERPAPER_CONFIG"
+  fi
+
+  safe_hyprpaper_reload
+}
+
+resolve_auto_mode() {
+  local source="clock"
+  local target=""
+
+  if command -v darkman >/dev/null 2>&1; then
+    target="$(darkman get 2>/dev/null || true)"
+    if [[ "$target" == "light" || "$target" == "dark" ]]; then
+      AUTO_SOURCE="darkman"
+      AUTO_TARGET="$target"
+      return 0
+    fi
+  fi
+
+  if command -v gsettings >/dev/null 2>&1; then
+    local scheme
+    scheme="$(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null || true)"
+    scheme="${scheme//\'}"
+    if [[ "$scheme" == "prefer-dark" ]]; then
+      AUTO_SOURCE="gsettings"
+      AUTO_TARGET="dark"
+      return 0
+    fi
+    if [[ "$scheme" == "prefer-light" ]]; then
+      AUTO_SOURCE="gsettings"
+      AUTO_TARGET="light"
+      return 0
+    fi
+  fi
+
+  if command -v gdbus >/dev/null 2>&1; then
+    local portal_raw portal_value
+    portal_raw="$(gdbus call --session \
+      --dest org.freedesktop.portal.Desktop \
+      --object-path /org/freedesktop/portal/desktop \
+      --method org.freedesktop.portal.Settings.Read \
+      org.freedesktop.appearance color-scheme 2>/dev/null || true)"
+    portal_value="$(printf '%s' "$portal_raw" | sed -nE 's/.*uint32 ([0-9]+).*/\1/p')"
+    case "$portal_value" in
+      1)
+        AUTO_SOURCE="portal"
+        AUTO_TARGET="dark"
+        return 0
+        ;;
+      2)
+        AUTO_SOURCE="portal"
+        AUTO_TARGET="light"
+        return 0
+        ;;
+    esac
+  fi
+
+  local applied
+  applied="$(state_applied)"
+  if [[ "$applied" == "light" || "$applied" == "dark" ]]; then
+    AUTO_SOURCE="state"
+    AUTO_TARGET="$applied"
+    return 0
+  fi
+
+  local hour
+  hour="$(date +%H)"
+  if (( 10#$hour >= 19 || 10#$hour < 7 )); then
+    target="dark"
+  else
+    target="light"
+  fi
+
+  AUTO_SOURCE="$source"
+  AUTO_TARGET="$target"
+}
+
+apply_mode() {
+  local desired_mode="$1"
+  local source="$2"
+
+  if [[ "$desired_mode" != "light" && "$desired_mode" != "dark" ]]; then
+    echo "theme-mode: invalid mode '$desired_mode'" >&2
+    exit 2
+  fi
+
+  sync_file_if_needed "$GHOSTTY_THEME_SRC_DIR/$GHOSTTY_LIGHT_THEME" "$GHOSTTY_THEME_DIR/$GHOSTTY_LIGHT_THEME"
+  sync_file_if_needed "$GHOSTTY_THEME_SRC_DIR/$GHOSTTY_DARK_THEME" "$GHOSTTY_THEME_DIR/$GHOSTTY_DARK_THEME"
+  sync_file_if_needed "$BTOP_THEME_SRC_DIR/os1.theme" "$BTOP_THEME_DIR/os1.theme"
+  sync_file_if_needed "$BTOP_THEME_SRC_DIR/os1-night.theme" "$BTOP_THEME_DIR/os1-night.theme"
+  sync_file_if_needed "$VICINAE_THEME_SRC_DIR/$VICINAE_LIGHT_THEME.toml" "$VICINAE_THEME_DIR/$VICINAE_LIGHT_THEME.toml"
+  sync_file_if_needed "$VICINAE_THEME_SRC_DIR/$VICINAE_DARK_THEME.toml" "$VICINAE_THEME_DIR/$VICINAE_DARK_THEME.toml"
+
+  set_gtk_mode "$desired_mode"
+  set_ghostty_mode "$desired_mode"
+  set_btop_mode "$desired_mode"
+  set_vicinae_mode_map
+  set_hypr_theme_colors "$desired_mode"
+  set_yazi_mode "$desired_mode"
+  set_hyprpaper_mode "$desired_mode"
+  safe_hyprctl_reload
+  safe_vicinae_reload
+
+  write_state "$(state_mode)" "$desired_mode" "$source"
+
+  notify "Theme mode" "Applied ${desired_mode} mode (${source})"
+}
+
+set_mode() {
+  local mode="$1"
+
+  case "$mode" in
+    light|dark)
+      write_state "$mode" "$(state_applied)" "manual"
+      apply_mode "$mode" "manual"
+      ;;
+    auto)
+      resolve_auto_mode
+      write_state "auto" "$(state_applied)" "auto:$AUTO_SOURCE"
+      apply_mode "$AUTO_TARGET" "auto:$AUTO_SOURCE"
+      ;;
+    *)
+      echo "theme-mode: invalid mode '$mode'" >&2
+      exit 2
+      ;;
+  esac
+}
+
+sync_mode() {
+  local desired applied target source
+  desired="$(state_mode)"
+  applied="$(state_applied)"
+
+  if [[ "$desired" == "auto" ]]; then
+    resolve_auto_mode
+    target="$AUTO_TARGET"
+    source="auto:$AUTO_SOURCE"
+  else
+    target="$desired"
+    source="manual"
+  fi
+
+  if [[ "$applied" != "$target" ]]; then
+    write_state "$desired" "$applied" "$source"
+    apply_mode "$target" "$source"
+  fi
+}
+
+status_json() {
+  local desired applied target source label alt
+  desired="$(state_mode)"
+  applied="$(state_applied)"
+  source="$(state_source)"
+
+  if [[ "$desired" == "auto" ]]; then
+    resolve_auto_mode
+    target="$AUTO_TARGET"
+    label="auto"
+    alt="auto"
+  else
+    target="$desired"
+    label="$desired"
+    alt="$desired"
+  fi
+
+  jq -n \
+    --arg mode "$desired" \
+    --arg target "$target" \
+    --arg applied "$applied" \
+    --arg source "$source" \
+    --arg label "$label" \
+    --arg alt "$alt" \
+    '{mode: $mode, target: $target, applied: $applied, source: $source, label: $label, alt: $alt}'
+}
+
+status_text() {
+  local desired applied target
+  desired="$(state_mode)"
+  applied="$(state_applied)"
+
+  if [[ "$desired" == "auto" ]]; then
+    resolve_auto_mode
+    target="$AUTO_TARGET"
+  else
+    target="$desired"
+  fi
+
+  echo "mode=$desired target=$target applied=$applied source=$(state_source)"
+}
+
+toggle_mode() {
+  local desired target
+  desired="$(state_mode)"
+
+  case "$desired" in
+    light)
+      set_mode dark
+      ;;
+    dark)
+      set_mode light
+      ;;
+    auto)
+      resolve_auto_mode
+      target="$AUTO_TARGET"
+      if [[ "$target" == "dark" ]]; then
+        set_mode light
+      else
+        set_mode dark
+      fi
+      ;;
+    *)
+      set_mode dark
+      ;;
+  esac
+}
+
+cycle_mode() {
+  local desired
+  desired="$(state_mode)"
+
+  case "$desired" in
+    light)
+      set_mode dark
+      ;;
+    dark)
+      set_mode auto
+      ;;
+    auto)
+      set_mode light
+      ;;
+    *)
+      set_mode light
+      ;;
+  esac
+}
+
+usage() {
+  cat <<USAGE
+Usage: theme-mode [light|dark|auto|toggle|cycle|sync|status] [--json] [--sync-auto] [--quiet]
+
+Examples:
+  theme-mode dark
+  theme-mode auto
+  theme-mode toggle
+  theme-mode status --json
+USAGE
+}
+
+main() {
+  require_tools
+  ensure_state
+
+  mkdir -p "$STATE_DIR"
+  exec 200>"$LOCK_FILE"
+  flock -n 200 || exit 0
+
+  local cmd="${1:-status}"
+  shift || true
+
+  local want_json=0
+  local sync_auto=0
+
+  while (($#)); do
+    case "$1" in
+      --json)
+        want_json=1
+        ;;
+      --sync-auto)
+        sync_auto=1
+        ;;
+      --quiet)
+        QUIET=1
+        ;;
+      -h|--help)
+        usage
+        return 0
+        ;;
+      *)
+        echo "theme-mode: unknown option '$1'" >&2
+        exit 2
+        ;;
+    esac
+    shift
+  done
+
+  case "$cmd" in
+    light|dark|auto)
+      set_mode "$cmd"
+      ;;
+    toggle)
+      toggle_mode
+      ;;
+    cycle)
+      cycle_mode
+      ;;
+    sync)
+      sync_mode
+      ;;
+    status)
+      if [[ "$sync_auto" == "1" && "$(state_mode)" == "auto" ]]; then
+        sync_mode
+      fi
+
+      if [[ "$want_json" == "1" ]]; then
+        status_json
+      else
+        status_text
+      fi
+      ;;
+    -h|--help|help)
+      usage
+      ;;
+    *)
+      echo "theme-mode: unknown command '$cmd'" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+}
+
+main "$@"

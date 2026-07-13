@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+import subprocess
+import sys
+
+
+def run_command(command):
+    try:
+        completed = subprocess.run(command, capture_output=True, text=True, check=False)
+    except FileNotFoundError:
+        return "", "command not found"
+
+    return completed.stdout.strip(), completed.stderr.strip() if completed.returncode != 0 else ""
+
+
+def split_escaped_fields(line):
+    fields = []
+    current = []
+    escaped = False
+
+    for character in line:
+        if escaped:
+            current.append(character)
+            escaped = False
+            continue
+
+        if character == "\\":
+            escaped = True
+            continue
+
+        if character == ":":
+            fields.append("".join(current))
+            current = []
+            continue
+
+        current.append(character)
+
+    fields.append("".join(current))
+    return fields
+
+
+def parse_device_status():
+    stdout, stderr = run_command(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE,CONNECTION", "device", "status"])
+
+    if stderr:
+        return [], stderr
+
+    rows = []
+
+    for raw_line in stdout.splitlines():
+        if not raw_line:
+            continue
+
+        fields = split_escaped_fields(raw_line)
+
+        if len(fields) < 4:
+            continue
+
+        rows.append({
+            "device": fields[0],
+            "type": fields[1],
+            "state": fields[2],
+            "connection": fields[3] if fields[3] and fields[3] != "--" else "",
+        })
+
+    return rows, ""
+
+
+def pick_device(rows, device_type):
+    matching = [row for row in rows if row["type"] == device_type]
+
+    if not matching:
+        return None
+
+    for row in matching:
+        if row["state"].startswith("connected"):
+            return row
+
+    return matching[0]
+
+
+def parse_wifi_radio():
+    stdout, stderr = run_command(["nmcli", "radio", "wifi"])
+
+    if stderr:
+        return False, stderr
+
+    return stdout.lower().startswith("enabled"), ""
+
+
+def parse_active_wifi_details():
+    stdout, stderr = run_command(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL", "device", "wifi", "list", "--rescan", "no"])
+
+    if stderr:
+        return {}, stderr
+
+    for raw_line in stdout.splitlines():
+        if not raw_line:
+            continue
+
+        fields = split_escaped_fields(raw_line)
+
+        if len(fields) < 3 or fields[0] != "*":
+            continue
+
+        return {
+            "ssid": fields[1],
+            "signal": int(fields[2]) if fields[2].isdigit() else 0,
+        }, ""
+
+    return {}, ""
+
+
+def scan_wifi_networks():
+    stdout, stderr = run_command([
+        "nmcli",
+        "-t",
+        "-f",
+        "IN-USE,BSSID,SSID,SIGNAL,SECURITY",
+        "device",
+        "wifi",
+        "list",
+        "--rescan",
+        "auto",
+    ])
+
+    if stderr:
+        return [], stderr
+
+    deduped = {}
+
+    for raw_line in stdout.splitlines():
+        if not raw_line:
+            continue
+
+        fields = split_escaped_fields(raw_line)
+
+        if len(fields) < 5:
+            continue
+
+        ssid = fields[2].strip()
+
+        if not ssid:
+            continue
+
+        network = {
+            "active": fields[0] == "*",
+            "bssid": fields[1],
+            "ssid": ssid,
+            "signal": int(fields[3]) if fields[3].isdigit() else 0,
+            "security": fields[4] or "Open",
+        }
+
+        current = deduped.get(ssid)
+
+        if current is None or network["active"] or (not current["active"] and network["signal"] > current["signal"]):
+            deduped[ssid] = network
+
+    networks = sorted(
+        deduped.values(),
+        key=lambda network: (not network["active"], -network["signal"], network["ssid"].lower()),
+    )
+
+    return networks[:6], ""
+
+
+def build_payload(include_scan):
+    rows, device_error = parse_device_status()
+    wifi_enabled, radio_error = parse_wifi_radio()
+    active_wifi, active_wifi_error = parse_active_wifi_details()
+    wifi_row = pick_device(rows, "wifi")
+    ethernet_row = pick_device(rows, "ethernet")
+
+    wifi = {
+        "available": wifi_row is not None,
+        "enabled": wifi_enabled,
+        "connected": False,
+        "device": wifi_row["device"] if wifi_row else "",
+        "state": wifi_row["state"] if wifi_row else "",
+        "connection": wifi_row["connection"] if wifi_row else "",
+        "ssid": "",
+        "signal": 0,
+    }
+
+    if wifi_row and wifi_row["state"].startswith("connected"):
+        wifi["connected"] = True
+        wifi["ssid"] = active_wifi.get("ssid") or wifi_row["connection"]
+        wifi["signal"] = active_wifi.get("signal") or 0
+
+    ethernet = {
+        "available": ethernet_row is not None,
+        "connected": bool(ethernet_row and ethernet_row["state"].startswith("connected")),
+        "device": ethernet_row["device"] if ethernet_row else "",
+        "state": ethernet_row["state"] if ethernet_row else "",
+        "connection": ethernet_row["connection"] if ethernet_row else "",
+    }
+
+    networks = []
+    network_error = ""
+
+    if include_scan and wifi_enabled:
+        networks, network_error = scan_wifi_networks()
+
+    errors = [error for error in [device_error, radio_error, active_wifi_error, network_error] if error]
+
+    return {
+        "wifi": wifi,
+        "ethernet": ethernet,
+        "networks": networks,
+        "online": wifi["connected"] or ethernet["connected"],
+        "error": errors[0] if errors else "",
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--scan", action="store_true")
+    parser.add_argument("--summary", action="store_true")
+    args = parser.parse_args()
+
+    payload = build_payload(include_scan=args.scan and not args.summary)
+    json.dump(payload, sys.stdout)
+
+
+if __name__ == "__main__":
+    main()

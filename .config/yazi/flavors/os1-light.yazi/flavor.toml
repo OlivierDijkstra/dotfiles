@@ -1,0 +1,99 @@
+# vim:fileencoding=utf-8
+
+[mgr]
+cwd = { fg = "#B75A46" }
+
+find_keyword = { fg = "#D66A52", bold = true, underline = true }
+find_position = { fg = "#B75A46", bg = "reset", bold = true }
+
+marker_copied   = { fg = "#6F8A74", bg = "#6F8A74" }
+marker_cut      = { fg = "#C75A44", bg = "#C75A44" }
+marker_marked   = { fg = "#B75A46", bg = "#B75A46" }
+marker_selected = { fg = "#D66A52", bg = "#D66A52" }
+
+count_copied   = { fg = "#F3ECE3", bg = "#6F8A74" }
+count_cut      = { fg = "#F3ECE3", bg = "#C75A44" }
+count_selected = { fg = "#F3ECE3", bg = "#D66A52" }
+
+border_symbol = "│"
+border_style  = { fg = "#C9B7A5" }
+
+[tabs]
+active   = { fg = "#F3ECE3", bg = "#D66A52", bold = true }
+inactive = { fg = "#7D7268", bg = "#EDE4D8" }
+
+[mode]
+normal_main = { fg = "#F3ECE3", bg = "#D66A52", bold = true }
+normal_alt  = { fg = "#5A4F46", bg = "#EDE4D8" }
+
+select_main = { fg = "#F3ECE3", bg = "#B75A46", bold = true }
+select_alt  = { fg = "#5A4F46", bg = "#EDE4D8" }
+
+unset_main = { fg = "#F3ECE3", bg = "#C75A44", bold = true }
+unset_alt  = { fg = "#7D7268", bg = "#EDE4D8" }
+
+[status]
+perm_sep   = { fg = "#A39384" }
+perm_type  = { fg = "#B75A46" }
+perm_read  = { fg = "#D66A52" }
+perm_write = { fg = "#C75A44" }
+perm_exec  = { fg = "#6F8A74" }
+
+progress_label  = { fg = "#2C2622", bold = true }
+progress_normal = { fg = "#6F8A74", bg = "#D8C8B7" }
+progress_error  = { fg = "#F3ECE3", bg = "#C75A44" }
+
+[pick]
+border   = { fg = "#D66A52" }
+active   = { fg = "#B75A46", bold = true }
+inactive = { fg = "#7D7268" }
+
+[input]
+border   = { fg = "#D66A52" }
+title    = { fg = "#B75A46" }
+value    = { fg = "#2C2622" }
+selected = { reversed = true }
+
+[cmp]
+border = { fg = "#D66A52" }
+
+[tasks]
+border  = { fg = "#D66A52" }
+title   = { fg = "#B75A46" }
+hovered = { fg = "#D66A52", bold = true }
+
+[which]
+mask            = { bg = "#EDE4D8" }
+cand            = { fg = "#B75A46" }
+rest            = { fg = "#8B7E72" }
+desc            = { fg = "#2C2622" }
+separator       = "  "
+separator_style = { fg = "#A39384" }
+
+[help]
+on      = { fg = "#B75A46" }
+run     = { fg = "#D66A52" }
+hovered = { reversed = true, bold = true }
+footer  = { fg = "#F3ECE3", bg = "#D66A52" }
+
+[spot]
+border   = { fg = "#D66A52" }
+title    = { fg = "#B75A46" }
+tbl_col  = { fg = "#B75A46" }
+tbl_cell = { fg = "#2C2622", bg = "#D8C8B7" }
+
+[notify]
+title_info  = { fg = "#6F8A74" }
+title_warn  = { fg = "#B87A4D" }
+title_error = { fg = "#C75A44" }
+
+[filetype]
+rules = [
+  { mime = "image/*", fg = "#B75A46" },
+  { mime = "{audio,video}/*", fg = "#B87A4D" },
+  { mime = "application/{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}", fg = "#D66A52" },
+  { mime = "application/{pdf,doc,rtf}", fg = "#6F8A74" },
+  { mime = "vfs/{absent,stale}", fg = "#8B7E72" },
+  { url = "*", fg = "#2C2622" },
+  { url = "*/", fg = "#B75A46" },
+]

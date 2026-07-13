@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+wait_for_wayland() {
+  local attempts=0
+  local sock
+
+  while (( attempts < 30 )); do
+    if [[ -n "${WAYLAND_DISPLAY:-}" && -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]]; then
+      return 0
+    fi
+
+    for sock in "$XDG_RUNTIME_DIR"/wayland-*; do
+      if [[ -S "$sock" ]]; then
+        export WAYLAND_DISPLAY="${sock##*/}"
+        return 0
+      fi
+    done
+
+    sleep 1
+    ((attempts += 1))
+  done
+
+  echo "dynamic-island-launch: Wayland socket not available" >&2
+  return 1
+}
+
+discover_hyprland_instance() {
+  local instance_dir
+
+  if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" && -S "$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket.sock" ]]; then
+    return 0
+  fi
+
+  for instance_dir in "$XDG_RUNTIME_DIR"/hypr/*; do
+    if [[ -S "$instance_dir/.socket.sock" ]]; then
+      export HYPRLAND_INSTANCE_SIGNATURE="${instance_dir##*/}"
+      return 0
+    fi
+  done
+}
+
+wait_for_hyprland_ready() {
+  local attempts=0
+  local monitors_json
+
+  while (( attempts < 30 )); do
+    if monitors_json="$(hyprctl -j monitors 2>/dev/null)"; then
+      if printf '%s' "$monitors_json" | jq -e 'map(.dpmsStatus == true and (.activeWorkspace.name | length > 0)) | any' >/dev/null 2>&1; then
+        return 0
+      fi
+    fi
+
+    sleep 1
+    ((attempts += 1))
+  done
+
+  echo "dynamic-island-launch: Hyprland monitors not ready" >&2
+  return 1
+}
+
+wait_for_wayland
+discover_hyprland_instance
+wait_for_hyprland_ready
+
+exec /usr/bin/quickshell -p "$HOME/dotfiles/.config/dynamic-island"

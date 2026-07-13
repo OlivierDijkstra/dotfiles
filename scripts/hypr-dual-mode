@@ -15,6 +15,17 @@ SCALE_1080="${HYPR_DUALMODE_SCALE_1080:-1.0}"
 POS="${HYPR_DUALMODE_POS:-auto}"
 ENABLE_NOTIFY="${HYPR_DUALMODE_NOTIFY:-1}"
 
+# HDR / color management. Disabled by default: on this NVIDIA + Hyprland setup
+# cm="hdr" breaks wlroots screencopy (grim/hyprshot/wf-recorder/screen-share
+# capture a stale frame from the wrong workspace), so the args are only applied
+# when HYPR_DUALMODE_HDR=1. Re-enable once HDR screencopy is fixed upstream.
+# Keep in sync with .config/hypr/config/monitor.lua.
+HDR_ENABLE="${HYPR_DUALMODE_HDR:-0}"
+HDR_BITDEPTH="${HYPR_DUALMODE_BITDEPTH:-10}"
+HDR_CM="${HYPR_DUALMODE_CM:-hdr}"
+HDR_SDRBRIGHTNESS="${HYPR_DUALMODE_SDRBRIGHTNESS:-2.0}"
+HDR_SDRSATURATION="${HYPR_DUALMODE_SDRSATURATION:-1.0}"
+
 log_notify() {
   local title="$1"
   local body="$2"
@@ -168,16 +179,16 @@ apply_profile() {
     4k)
       mode="$MODE_4K"
       scale="$SCALE_4K"
-      anim="yes"
-      blur="yes"
-      shadow="yes"
+      anim="true"
+      blur="true"
+      shadow="true"
       ;;
     1080)
       mode="$MODE_1080"
       scale="$SCALE_1080"
-      anim="no"
-      blur="no"
-      shadow="no"
+      anim="false"
+      blur="false"
+      shadow="false"
       ;;
     *)
       echo "hypr-dual-mode: unknown profile '$profile'" >&2
@@ -185,16 +196,24 @@ apply_profile() {
       ;;
   esac
 
-  if ! hyprctl keyword monitor "$OUTPUT,$mode,$POS,$scale" >/dev/null; then
+  # Under a Lua config `hyprctl keyword` is rejected ("can't work with
+  # non-legacy parsers. Use eval."), so drive everything through `hyprctl
+  # eval`, which evaluates Lua against the running config. HDR/color args are
+  # only carried through when HDR_ENABLE=1 (see note above); otherwise the
+  # display stays SDR so screencopy keeps working.
+  mon_args="output = \"$OUTPUT\", mode = \"$mode\", position = \"$POS\", scale = $scale"
+  if [[ "$HDR_ENABLE" == "1" ]]; then
+    mon_args="$mon_args, bitdepth = $HDR_BITDEPTH, cm = \"$HDR_CM\", sdrbrightness = $HDR_SDRBRIGHTNESS, sdrsaturation = $HDR_SDRSATURATION"
+  fi
+  if ! hyprctl eval "hl.monitor({ $mon_args })" >/dev/null; then
     log_notify "Dual mode" "Failed to set $profile profile on $OUTPUT"
     echo "hypr-dual-mode: failed to apply monitor mode '$mode' on '$OUTPUT'" >&2
     exit 1
   fi
 
   # Keep rendering overhead aligned with the selected profile.
-  hyprctl keyword animations:enabled "$anim" >/dev/null || true
-  hyprctl keyword decoration:blur:enabled "$blur" >/dev/null || true
-  hyprctl keyword decoration:shadow:enabled "$shadow" >/dev/null || true
+  hyprctl eval "hl.config({ animations = { enabled = $anim } })" >/dev/null || true
+  hyprctl eval "hl.config({ decoration = { blur = { enabled = $blur }, shadow = { enabled = $shadow } } })" >/dev/null || true
 
   log_notify "Dual mode" "$OUTPUT -> $profile ($mode, scale $scale)"
   echo "$OUTPUT -> $profile ($mode, scale $scale)"

@@ -27,9 +27,9 @@ Utility shell scripts:
 - `syscheck.sh` - Post-update system diagnostics (bash)
 
 ### .config/hypr/
-Hyprland configuration with modular structure:
-- `hyprland.conf` - Main config, sources all other files
-- `config/` - Split configs: animations, autostart, decorations, environment, input, keybinds, monitor, variables, windowrules
+Hyprland configuration with modular structure (Lua — Hyprland loads `hyprland.lua` when present):
+- `hyprland.lua` - Main config, `require()`s all other files
+- `config/` - Split configs (`.lua`): animations, autostart, decorations, environment, input, keybinds, monitor, variables, vars, windowrules
 
 ### .config/nvim/
 Neovim configuration using lazy.nvim:
@@ -38,7 +38,7 @@ Neovim configuration using lazy.nvim:
 - `lua/plugins/` - Plugin specifications
 
 ### Other configs
-btop, fastfetch, ghostty, hyprpanel, mako, mpv, rofi, xdg-desktop-portal, yazi
+btop, fastfetch, ghostty, mako, mpv, rofi, xdg-desktop-portal, yazi
 
 ## Conventions
 

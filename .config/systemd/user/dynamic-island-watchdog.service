@@ -1,0 +1,16 @@
+[Unit]
+Description=Dynamic Island Watchdog
+After=graphical-session.target dynamic-island.service
+Wants=graphical-session.target dynamic-island.service
+PartOf=graphical-session.target
+ConditionPathExists=%h/dotfiles/scripts/dynamic-island-watchdog
+
+[Service]
+Type=simple
+ExecStart=%h/dotfiles/scripts/dynamic-island-watchdog
+Restart=on-failure
+RestartSec=2
+Slice=session.slice
+
+[Install]
+WantedBy=default.target

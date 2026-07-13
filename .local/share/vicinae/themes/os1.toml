@@ -1,0 +1,77 @@
+# OS1-inspired warm, human-centric theme for Vicinae
+# Docs: https://docs.vicinae.com/theming/getting-started
+
+[meta]
+name = "os1"
+description = "Warm OS1-inspired palette (Her, 2013)"
+variant = "light"
+inherits = "vicinae-light"
+
+[colors.core]
+accent = "#D66A52"
+accent_foreground = "#FFF8EF"
+background = "#F3ECE3"
+foreground = "#2C2622"
+secondary_background = "#EDE4D8"
+border = "#D8C8B7"
+
+[colors.main_window]
+border = "colors.core.border"
+footer = { background = "colors.core.secondary_background" }
+
+[colors.settings_window]
+border = "colors.core.border"
+
+[colors.accents]
+blue = "#7A9CB5"
+green = "#8FA27B"
+magenta = "#A68695"
+orange = "#D08A5B"
+red = "#C75A44"
+yellow = "#C8A56E"
+cyan = "#7CA9A3"
+purple = "#B392A0"
+
+[colors.shortcut]
+border = "colors.core.border"
+
+[colors.text]
+default = "colors.core.foreground"
+muted = "#7D7268"
+danger = "#C75A44"
+success = "#8FA27B"
+placeholder = "#9B8E82"
+selection = { background = "#E8B7A8", foreground = "#2C2622" }
+
+[colors.text.links]
+default = "#C15C46"
+visited = "#9E7B8A"
+
+[colors.input]
+border = "#D8C8B7"
+border_focus = "#D66A52"
+border_error = "#C75A44"
+
+[colors.button.primary]
+background = "#D66A52"
+foreground = "#FFF8EF"
+hover = { background = "#C75A44" }
+focus = { outline = "#B85340" }
+
+[colors.list.item.selection]
+background = "#E8B7A8"
+foreground = "#2C2622"
+secondary_background = "#F0E5D8"
+secondary_foreground = "#5A4F46"
+
+[colors.grid.item]
+background = "#EDE4D8"
+hover = { outline = "#D66A52" }
+selection = { outline = "#D66A52" }
+
+[colors.scrollbars]
+background = "#D8C8B7"
+
+[colors.loading]
+bar = "#D66A52"
+spinner = "#D66A52"

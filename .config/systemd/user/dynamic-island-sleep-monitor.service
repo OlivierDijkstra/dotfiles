@@ -1,0 +1,16 @@
+[Unit]
+Description=Dynamic Island Sleep Monitor
+After=graphical-session.target
+Wants=graphical-session.target
+PartOf=graphical-session.target
+ConditionPathExists=%h/dotfiles/scripts/dynamic-island-sleep-monitor
+
+[Service]
+Type=simple
+ExecStart=%h/dotfiles/scripts/dynamic-island-sleep-monitor
+Restart=on-failure
+RestartSec=2
+Slice=session.slice
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,6 @@
+{
+  "enabled": [
+    "codex-wrapper-updater",
+    "remote-mobile-control"
+  ]
+}

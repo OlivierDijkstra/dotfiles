@@ -1,13 +1,13 @@
 * {
     /* Import global colors */
-    bg0:    rgba(29, 29, 29, 0.95);   /* background */
-    bg1:    rgba(60, 60, 60, 1);      /* background-alt */
-    bg2:    rgba(75, 75, 75, 0.5);    /* background-highlight with transparency */
-    bg3:    rgba(198, 198, 198, 1);   /* primary accent */
-    fg0:    rgba(235, 235, 235, 1);   /* foreground */
-    fg1:    rgba(255, 255, 255, 1);   /* bright white */
-    fg2:    rgba(204, 204, 204, 1);   /* foreground-subtle */
-    fg3:    rgba(120, 120, 120, 1);   /* border-dark */
+    bg0:    rgba(243, 236, 227, 0.95); /* background */
+    bg1:    rgba(237, 228, 216, 1);    /* background-alt */
+    bg2:    rgba(216, 200, 183, 0.65); /* background-highlight with transparency */
+    bg3:    rgba(214, 106, 82, 1);     /* primary accent */
+    fg0:    rgba(44, 38, 34, 1);       /* foreground */
+    fg1:    rgba(30, 26, 23, 1);       /* foreground-strong */
+    fg2:    rgba(90, 79, 70, 1);       /* foreground-subtle */
+    fg3:    rgba(125, 114, 104, 1);    /* muted */
 }
 
 * {

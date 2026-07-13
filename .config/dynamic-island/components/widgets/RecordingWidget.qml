@@ -1,5 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
+import ".." as Theme
 
 Item {
     id: root
@@ -44,7 +44,7 @@ Item {
                         width: 14
                         height: 14
                         radius: 7
-                        color: "#ff4d5e"
+                        color: Theme.Palette.danger
                         opacity: 0.22
                         scale: 1
 
@@ -78,7 +78,7 @@ Item {
                         width: 10
                         height: 10
                         radius: 5
-                        color: "#ff4d5e"
+                        color: Theme.Palette.danger
                     }
                 }
 
@@ -86,7 +86,7 @@ Item {
                     id: timerLabel
 
                     anchors.verticalCenter: parent.verticalCenter
-                    color: "#ff4d5e"
+                    color: Theme.Palette.danger
                     text: root.recordingState ? root.recordingState.elapsedText : "0:00"
                     font.family: "Geist Mono"
                     font.pixelSize: 16
@@ -97,7 +97,7 @@ Item {
 
             Text {
                 width: parent.width
-                color: Palette.foreground
+                color: Theme.Palette.foreground
                 text: "Screen Recording"
                 elide: Text.ElideRight
                 font.family: "Geist"
@@ -126,7 +126,7 @@ Item {
                 width: 52
                 height: 52
                 radius: 26
-                color: "#19191d"
+                color: Theme.Palette.surface3
                 opacity: stopArea.containsMouse ? 0.94 : 0.82
             }
 
@@ -135,9 +135,9 @@ Item {
                 width: 44
                 height: 44
                 radius: 22
-                color: "#09090b"
+                color: Theme.Palette.surface1
                 border.width: 1
-                border.color: stopArea.containsMouse ? "#d4d4d8" : "#6f6f77"
+                border.color: stopArea.containsMouse ? Theme.Palette.foreground : Theme.Palette.borderStrong
             }
 
             Rectangle {
@@ -145,7 +145,7 @@ Item {
                 width: 18
                 height: 18
                 radius: 6
-                color: "#f04452"
+                color: Theme.Palette.danger
             }
 
             MouseArea {

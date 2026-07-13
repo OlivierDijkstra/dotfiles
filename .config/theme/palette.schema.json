@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["name", "source", "light", "dark"],
+  "properties": {
+    "name": { "type": "string" },
+    "source": { "type": "string", "format": "uri" },
+    "light": { "$ref": "#/$defs/mode" },
+    "dark": { "$ref": "#/$defs/mode" }
+  },
+  "$defs": {
+    "hex": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$"
+    },
+    "mode": {
+      "type": "object",
+      "required": ["surfaces", "text", "borders", "interaction", "accent", "status", "ansi"],
+      "properties": {
+        "surfaces": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "items": { "$ref": "#/$defs/hex" }
+        },
+        "text": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+        "borders": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+        "interaction": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+        "accent": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+        "status": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+        "ansi": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } }
+      }
+    }
+  }
+}

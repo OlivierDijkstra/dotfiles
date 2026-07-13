@@ -1,4 +1,5 @@
 import QtQuick
+import ".." as Theme
 
 Item {
     id: root
@@ -106,7 +107,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: Math.round(root.controlSize * 0.35)
-                color: volumeButtonArea.containsMouse ? "#181818" : "transparent"
+                color: volumeButtonArea.containsMouse ? Theme.Palette.hoverBackground : "transparent"
 
                 Behavior on color {
                     ColorAnimation {
@@ -116,7 +117,7 @@ Item {
                 }
             }
 
-            Image {
+            Theme.ThemedIcon {
                 anchors.centerIn: parent
                 width: Math.round(root.controlSize * 0.45)
                 height: width
@@ -154,7 +155,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 height: volumeArea.pressed ? 7 : 6
                 radius: height / 2
-                color: "#2d2d2f"
+                color: Theme.Palette.trackBackground
                 clip: true
 
                 Behavior on height {
@@ -172,7 +173,7 @@ Item {
                     anchors.bottom: parent.bottom
                     width: parent.width * root.displayedVolumeVisual
                     radius: parent.radius
-                    color: "#d9d9da"
+                    color: Theme.Palette.trackFill
                 }
             }
 
@@ -221,7 +222,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: Math.round(root.controlSize * 0.35)
-                color: routeButtonArea.containsMouse ? "#181818" : "transparent"
+                color: routeButtonArea.containsMouse ? Theme.Palette.hoverBackground : "transparent"
 
                 Behavior on color {
                     ColorAnimation {
@@ -231,7 +232,7 @@ Item {
                 }
             }
 
-            Image {
+            Theme.ThemedIcon {
                 anchors.centerIn: parent
                 width: Math.round(root.controlSize * 0.45)
                 height: width

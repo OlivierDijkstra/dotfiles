@@ -1,5 +1,5 @@
 import QtQuick
-import "Palette.js" as Palette
+import "." as Theme
 
 Item {
     id: root
@@ -20,7 +20,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: root.layout ? root.layout.surfaceRadius : height / 2
-        color: Palette.islandBackground
+        color: Theme.Palette.islandBackground
 
         Behavior on radius {
             animation: IslandMorphAnimation {}

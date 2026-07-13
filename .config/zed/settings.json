@@ -66,9 +66,9 @@
   "ui_font_size": 15.0,
   "buffer_font_size": 14.0,
   "theme": {
-    "mode": "dark",
-    "light": "OS1",
-    "dark": "OS1 Night",
+    "mode": "system",
+    "light": "Islands Light",
+    "dark": "Vesper",
   },
   "lsp": {
     "vtsls": {

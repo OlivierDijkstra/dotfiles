@@ -18,7 +18,7 @@ hl.config({
             enabled      = true,
             range        = 30,    -- spread it further (softer edge)
             render_power = 2,     -- lower = less harsh falloff (2–2.5 is soft)
-            color        = "rgba(2c262233)", -- warm shadow tuned for light surfaces
+            color        = require("config.vars").colors.shadow,
             offset       = { 0, 4 }, -- tiny lift so it looks "floating"
         },
     },

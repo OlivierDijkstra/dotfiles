@@ -1,0 +1,125 @@
+{
+  "$schema": "./palette.schema.json",
+  "name": "OS1 Neutral Surfaces",
+  "source": "https://www.fluidfunctionalism.com/docs/surfaces",
+  "light": {
+    "surfaces": [
+      "#FAFAFA",
+      "#FCFCFC",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF"
+    ],
+    "text": {
+      "primary": "#171717",
+      "secondary": "#525252",
+      "muted": "#737373",
+      "disabled": "#A3A3A3",
+      "inverse": "#FFFFFF"
+    },
+    "borders": {
+      "subtle": "#F0F0F0",
+      "default": "#E5E5E5",
+      "strong": "#D4D4D4",
+      "focus": "#A3A3A3"
+    },
+    "interaction": {
+      "hover": "#F5F5F5",
+      "selected": "#E5E5E5",
+      "active": "#D4D4D4"
+    },
+    "accent": {
+      "default": "#171717",
+      "foreground": "#FFFFFF"
+    },
+    "status": {
+      "red": "#B84E4E",
+      "green": "#3F7D58",
+      "yellow": "#916622",
+      "blue": "#3F6F9F",
+      "magenta": "#7C5E92",
+      "cyan": "#3E7B7D"
+    },
+    "ansi": {
+      "black": "#171717",
+      "brightBlack": "#737373",
+      "red": "#B84E4E",
+      "brightRed": "#CC6262",
+      "green": "#3F7D58",
+      "brightGreen": "#55966C",
+      "yellow": "#916622",
+      "brightYellow": "#AA7D35",
+      "blue": "#3F6F9F",
+      "brightBlue": "#5787B8",
+      "magenta": "#7C5E92",
+      "brightMagenta": "#9476A9",
+      "cyan": "#3E7B7D",
+      "brightCyan": "#569496",
+      "white": "#D4D4D4",
+      "brightWhite": "#FFFFFF"
+    }
+  },
+  "dark": {
+    "surfaces": [
+      "#171717",
+      "#1E1E1E",
+      "#252525",
+      "#2C2C2C",
+      "#333333",
+      "#3A3A3A",
+      "#414141",
+      "#484848"
+    ],
+    "text": {
+      "primary": "#F5F5F5",
+      "secondary": "#D4D4D4",
+      "muted": "#A3A3A3",
+      "disabled": "#737373",
+      "inverse": "#171717"
+    },
+    "borders": {
+      "subtle": "#252525",
+      "default": "#333333",
+      "strong": "#484848",
+      "focus": "#737373"
+    },
+    "interaction": {
+      "hover": "#2C2C2C",
+      "selected": "#414141",
+      "active": "#484848"
+    },
+    "accent": {
+      "default": "#F5F5F5",
+      "foreground": "#171717"
+    },
+    "status": {
+      "red": "#E57373",
+      "green": "#76B78B",
+      "yellow": "#D2A85B",
+      "blue": "#7CA9D8",
+      "magenta": "#A994C3",
+      "cyan": "#73B5B7"
+    },
+    "ansi": {
+      "black": "#171717",
+      "brightBlack": "#737373",
+      "red": "#C85F5F",
+      "brightRed": "#E57373",
+      "green": "#5D9E73",
+      "brightGreen": "#76B78B",
+      "yellow": "#B98E43",
+      "brightYellow": "#D2A85B",
+      "blue": "#6390BF",
+      "brightBlue": "#7CA9D8",
+      "magenta": "#907BAA",
+      "brightMagenta": "#A994C3",
+      "cyan": "#5A9C9E",
+      "brightCyan": "#73B5B7",
+      "white": "#D4D4D4",
+      "brightWhite": "#F5F5F5"
+    }
+  }
+}

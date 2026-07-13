@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import "../Palette.js" as Palette
+import ".." as Theme
 
 Item {
     id: root
@@ -46,7 +46,7 @@ Item {
 
                 Text {
                     width: parent.width
-                    color: Palette.foreground
+                    color: Theme.Palette.foreground
                     text: root.panelTitle
                     font.family: "Geist"
                     font.pixelSize: 16
@@ -56,7 +56,7 @@ Item {
 
                 Text {
                     width: parent.width
-                    color: Palette.mutedForeground
+                    color: Theme.Palette.mutedForeground
                     text: root.panelDescription
                     font.family: "Geist"
                     font.pixelSize: 12
@@ -83,10 +83,10 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: 16
-                    color: closeArea.containsMouse ? "#1a1a1b" : "#121214"
+                    color: closeArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
                 }
 
-                Image {
+                Theme.ThemedIcon {
                     anchors.centerIn: parent
                     width: 14
                     height: 14
@@ -147,12 +147,12 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 17
-                        color: tabButton.active ? Palette.chipActiveBackground : "transparent"
+                        color: tabButton.active ? Theme.Palette.chipActiveBackground : "transparent"
                     }
 
                     Text {
                         anchors.centerIn: parent
-                        color: tabButton.active ? Palette.chipActiveForeground : Palette.foreground
+                        color: tabButton.active ? Theme.Palette.chipActiveForeground : Theme.Palette.foreground
                         text: tabButton.modelData.label
                         font.family: "Geist"
                         font.pixelSize: 12
@@ -179,7 +179,7 @@ Item {
             Text {
                 width: parent.width
                 visible: root.devices.length === 0
-                color: Palette.mutedForeground
+                color: Theme.Palette.mutedForeground
                 text: root.showingInputs ? "No input devices available." : "No output devices available."
                 font.family: "Geist"
                 font.pixelSize: 13
@@ -210,7 +210,7 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 16
-                        color: deviceRow.device.isDefault ? "#101013" : (deviceArea.containsMouse ? "#161618" : "transparent")
+                        color: deviceRow.device.isDefault ? Theme.Palette.selectedBackground : (deviceArea.containsMouse ? Theme.Palette.hoverBackground : "transparent")
                     }
 
                     Row {
@@ -227,7 +227,7 @@ Item {
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: parent.width
-                                color: deviceRow.device.isDefault ? Palette.foreground : Palette.mutedForeground
+                                color: deviceRow.device.isDefault ? Theme.Palette.foreground : Theme.Palette.mutedForeground
                                 text: deviceRow.device.name
                                 font.family: "Geist"
                                 font.pixelSize: 13
@@ -244,7 +244,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             clip: true
 
-                            Image {
+                            Theme.ThemedIcon {
                                 anchors.centerIn: parent
                                 width: 16
                                 height: 16

@@ -1,6 +1,6 @@
 import QtQuick
 import Quickshell.Hyprland
-import "../Palette.js" as Palette
+import ".." as Theme
 
 Item {
     id: root
@@ -53,7 +53,7 @@ Item {
                 width: current ? 12 : 5
                 height: 5
                 radius: Math.round(height / 2)
-                color: Palette.foreground
+                color: Theme.Palette.foreground
                 opacity: current ? 1 : 0.28
 
                 Behavior on width {

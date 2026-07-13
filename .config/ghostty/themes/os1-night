@@ -1,23 +1,23 @@
-# OS1 Night warm palette
-foreground = #E8DED2
-background = #1E1A17
-cursor-color = #D66A52
-selection-background = #5A4F46
-selection-foreground = #FFF8EF
+# Generated from .config/theme/palette.json by scripts/generate-theme.
+foreground = #F5F5F5
+background = #171717
+cursor-color = #F5F5F5
+selection-background = #414141
+selection-foreground = #F5F5F5
 
-palette = 0=#2C2622
-palette = 1=#C75A44
-palette = 2=#8E9C75
-palette = 3=#C4935E
-palette = 4=#6F8FAF
-palette = 5=#AA7D8A
-palette = 6=#6D9C95
-palette = 7=#DCCFC2
-palette = 8=#7D7268
-palette = 9=#D66A52
-palette = 10=#9FAA84
-palette = 11=#D0A777
-palette = 12=#89A5C0
-palette = 13=#B68A99
-palette = 14=#7DAEA8
-palette = 15=#FFF8EF
+palette = 0=#171717
+palette = 1=#C85F5F
+palette = 2=#5D9E73
+palette = 3=#B98E43
+palette = 4=#6390BF
+palette = 5=#907BAA
+palette = 6=#5A9C9E
+palette = 7=#D4D4D4
+palette = 8=#737373
+palette = 9=#E57373
+palette = 10=#76B78B
+palette = 11=#D2A85B
+palette = 12=#7CA9D8
+palette = 13=#A994C3
+palette = 14=#73B5B7
+palette = 15=#F5F5F5

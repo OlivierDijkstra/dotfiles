@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Effects
-import "../Palette.js" as Palette
+import ".." as Theme
 
 Item {
     id: root
@@ -114,9 +114,9 @@ Item {
                 width: 60
                 height: 60
                 radius: 16
-                color: "#151515"
+                color: Theme.Palette.surface2
                 border.width: 1
-                border.color: Palette.outline
+                border.color: Theme.Palette.outline
                 clip: true
 
                 Image {
@@ -154,21 +154,21 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     visible: artwork.status !== Image.Ready
-                    color: root.hasPlayer ? "transparent" : "#101012"
+                    color: root.hasPlayer ? "transparent" : Theme.Palette.surface2
 
                     gradient: Gradient {
                         GradientStop {
                             position: 0
-                            color: root.hasPlayer ? "#ff6a3d" : "#1b1b1f"
+                            color: Theme.Palette.surface4
                         }
                         GradientStop {
                             position: 1
-                            color: root.hasPlayer ? "#8ab4ff" : "#26262c"
+                            color: Theme.Palette.surface6
                         }
                     }
                 }
 
-                Image {
+                Theme.ThemedIcon {
                     anchors.centerIn: parent
                     visible: artwork.status !== Image.Ready
                     width: 20
@@ -194,7 +194,7 @@ Item {
 
                         Text {
                             width: parent.width
-                            color: Palette.foreground
+                            color: Theme.Palette.foreground
                             text: root.title
                             elide: Text.ElideRight
                             font.family: "Geist"
@@ -204,7 +204,7 @@ Item {
 
                         Text {
                             width: parent.width
-                            color: Palette.mutedForeground
+                            color: Theme.Palette.mutedForeground
                             text: root.artist
                             elide: Text.ElideRight
                             visible: text.length > 0
@@ -254,7 +254,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width
                             horizontalAlignment: Text.AlignLeft
-                            color: Palette.mutedForeground
+                            color: Theme.Palette.mutedForeground
                             text: root.elapsedTimeText
                             font.family: "Geist Mono"
                             font.pixelSize: 12
@@ -271,7 +271,7 @@ Item {
                             width: parent.width
                             height: 4
                             radius: 2
-                            color: Palette.trackBackground
+                            color: Theme.Palette.trackBackground
                         }
 
                         Rectangle {
@@ -280,7 +280,7 @@ Item {
                             width: parent.width * root.progress
                             height: 4
                             radius: 2
-                            color: Palette.trackFill
+                            color: Theme.Palette.trackFill
                         }
                     }
 
@@ -296,7 +296,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width
                             horizontalAlignment: Text.AlignRight
-                            color: Palette.mutedForeground
+                            color: Theme.Palette.mutedForeground
                             text: root.remainingTimeText
                             font.family: "Geist Mono"
                             font.pixelSize: 12
@@ -329,10 +329,10 @@ Item {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 14
-                                color: previousArea.containsMouse ? "#181818" : "transparent"
+                                color: previousArea.containsMouse ? Theme.Palette.hoverBackground : "transparent"
                             }
 
-                            Image {
+                            Theme.ThemedIcon {
                                 anchors.centerIn: parent
                                 width: 18
                                 height: 18
@@ -368,10 +368,10 @@ Item {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 14
-                                color: playPauseArea.containsMouse ? "#181818" : "transparent"
+                                color: playPauseArea.containsMouse ? Theme.Palette.hoverBackground : "transparent"
                             }
 
-                            Image {
+                            Theme.ThemedIcon {
                                 anchors.centerIn: parent
                                 anchors.horizontalCenterOffset: root.isPlaying ? 0 : 1
                                 width: root.isPlaying ? 17 : 18
@@ -408,10 +408,10 @@ Item {
                             Rectangle {
                                 anchors.fill: parent
                                 radius: 14
-                                color: nextArea.containsMouse ? "#181818" : "transparent"
+                                color: nextArea.containsMouse ? Theme.Palette.hoverBackground : "transparent"
                             }
 
-                            Image {
+                            Theme.ThemedIcon {
                                 anchors.centerIn: parent
                                 width: 18
                                 height: 18
@@ -479,7 +479,7 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 14
-                        color: themeModeButtonArea.containsMouse ? "#181818" : "#111113"
+                        color: themeModeButtonArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
 
                         Behavior on color {
                             ColorAnimation {
@@ -489,7 +489,7 @@ Item {
                         }
                     }
 
-                    Image {
+                    Theme.ThemedIcon {
                         anchors.centerIn: parent
                         width: 18
                         height: 18
@@ -555,7 +555,7 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 14
-                        color: bluetoothButtonArea.containsMouse ? "#181818" : "#111113"
+                        color: bluetoothButtonArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
 
                         Behavior on color {
                             ColorAnimation {
@@ -565,7 +565,7 @@ Item {
                         }
                     }
 
-                    Image {
+                    Theme.ThemedIcon {
                         anchors.centerIn: parent
                         width: 18
                         height: 18
@@ -607,7 +607,7 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 14
-                        color: networkButtonArea.containsMouse ? "#181818" : "#111113"
+                        color: networkButtonArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
 
                         Behavior on color {
                             ColorAnimation {
@@ -617,7 +617,7 @@ Item {
                         }
                     }
 
-                    Image {
+                    Theme.ThemedIcon {
                         anchors.centerIn: parent
                         width: 18
                         height: 18

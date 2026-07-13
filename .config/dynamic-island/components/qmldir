@@ -1,0 +1,7 @@
+singleton Palette 1.0 Palette.qml
+ThemedIcon 1.0 ThemedIcon.qml
+IslandMorphAnimation 1.0 IslandMorphAnimation.qml
+IslandScaffold 1.0 IslandScaffold.qml
+IslandStateController 1.0 IslandStateController.qml
+IslandSurface 1.0 IslandSurface.qml
+IslandWidgetHost 1.0 IslandWidgetHost.qml

@@ -1,4 +1,4 @@
-#Bashtop theme using colors from .config/theme/colors.conf
+# Legacy Vesper theme retained alongside the generated OS1 themes.
 #Modified from original vesper theme
 
 # Colors should be in 6 or 2 character hexadecimal or single spaced rgb decimal: "#RRGGBB", "#BW" or "0-255 0-255 0-255"

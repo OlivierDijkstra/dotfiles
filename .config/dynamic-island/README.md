@@ -16,7 +16,7 @@ Right now this repo contains a small layout system, a widget system, and the tra
 - `components/IslandWidgetHost.qml`: renders widgets and handles widget blur/fade transitions.
 - `components/widgets/`: concrete widget implementations.
 - `components/Motion.js`: shared motion constants.
-- `components/Palette.js`: shared color dictionary.
+- `components/Palette.qml`: generated dark surface palette; the island stays pure black in every desktop mode.
 
 ## Layouts
 
@@ -97,7 +97,7 @@ The host renders widget content into a `ShaderEffectSource` and applies `MultiEf
 
 ## Styling
 
-- Surface color and UI colors are centralized in `components/Palette.js`.
+- Surface and semantic colors are generated from `.config/theme/palette.json`.
 - The current date/time widget uses `Geist` explicitly.
 - The date/time text is currently `14px` and `Font.DemiBold`.
 

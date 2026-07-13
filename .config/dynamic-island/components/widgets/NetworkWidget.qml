@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import "../Palette.js" as Palette
+import ".." as Theme
 
 Item {
     id: root
@@ -59,10 +59,10 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: 16
-                    color: closeArea.containsMouse ? "#1a1a1b" : "#121214"
+                    color: closeArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
                 }
 
-                Image {
+                Theme.ThemedIcon {
                     anchors.centerIn: parent
                     width: 14
                     height: 14
@@ -95,7 +95,7 @@ Item {
                 width: Math.floor((parent.width - parent.spacing) / 2)
                 height: 60
                 radius: 20
-                color: root.networkState.wifiConnected ? "#10141a" : "#101013"
+                color: root.networkState.wifiConnected ? Theme.Palette.selectedBackground : Theme.Palette.surface2
 
                 Column {
                     anchors.fill: parent
@@ -107,7 +107,7 @@ Item {
 
                     Text {
                         width: parent.width
-                        color: Palette.mutedForeground
+                        color: Theme.Palette.mutedForeground
                         text: "Wi-Fi"
                         font.family: "Geist"
                         font.pixelSize: 11
@@ -116,7 +116,7 @@ Item {
 
                     Text {
                         width: parent.width
-                        color: Palette.foreground
+                        color: Theme.Palette.foreground
                         text: root.networkState.wifiSummary
                         font.family: "Geist"
                         font.pixelSize: 15
@@ -130,7 +130,7 @@ Item {
                 width: statusCardRow.width - wifiStatusCard.width - statusCardRow.spacing
                 height: 60
                 radius: 20
-                color: root.networkState.ethernetConnected ? "#10141a" : "#101013"
+                color: root.networkState.ethernetConnected ? Theme.Palette.selectedBackground : Theme.Palette.surface2
 
                 Column {
                     anchors.fill: parent
@@ -142,7 +142,7 @@ Item {
 
                     Text {
                         width: parent.width
-                        color: Palette.mutedForeground
+                        color: Theme.Palette.mutedForeground
                         text: "Ethernet"
                         font.family: "Geist"
                         font.pixelSize: 11
@@ -151,7 +151,7 @@ Item {
 
                     Text {
                         width: parent.width
-                        color: Palette.foreground
+                        color: Theme.Palette.foreground
                         text: root.networkState.ethernetSummary
                         font.family: "Geist"
                         font.pixelSize: 15
@@ -217,12 +217,12 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 19
-                        color: actionButton.modelData.active ? Palette.chipActiveBackground : "#101013"
+                        color: actionButton.modelData.active ? Theme.Palette.chipActiveBackground : Theme.Palette.surface2
                     }
 
                     Text {
                         anchors.centerIn: parent
-                        color: actionButton.modelData.active ? Palette.chipActiveForeground : Palette.foreground
+                        color: actionButton.modelData.active ? Theme.Palette.chipActiveForeground : Theme.Palette.foreground
                         text: actionButton.modelData.label
                         font.family: "Geist"
                         font.pixelSize: 12
@@ -249,7 +249,7 @@ Item {
 
             Text {
                 width: parent.width
-                color: Palette.foreground
+                color: Theme.Palette.foreground
                 text: "Nearby Wi-Fi"
                 font.family: "Geist"
                 font.pixelSize: 13
@@ -259,7 +259,7 @@ Item {
             Text {
                 width: parent.width
                 visible: root.networkState.wifiAvailable && !root.networkState.wifiEnabled
-                color: Palette.mutedForeground
+                color: Theme.Palette.mutedForeground
                 text: "Turn Wi-Fi on to scan for nearby networks."
                 font.family: "Geist"
                 font.pixelSize: 13
@@ -269,7 +269,7 @@ Item {
             Text {
                 width: parent.width
                 visible: root.networkState.wifiAvailable && root.networkState.wifiEnabled && root.networks.length === 0
-                color: Palette.mutedForeground
+                color: Theme.Palette.mutedForeground
                 text: "No networks found yet. Try refreshing or opening full settings."
                 font.family: "Geist"
                 font.pixelSize: 13
@@ -301,7 +301,7 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 16
-                        color: networkRow.network.active ? "#101318" : (networkArea.containsMouse ? "#161618" : "transparent")
+                        color: networkRow.network.active ? Theme.Palette.selectedBackground : (networkArea.containsMouse ? Theme.Palette.hoverBackground : "transparent")
                     }
 
                     Row {
@@ -322,7 +322,7 @@ Item {
 
                                 Text {
                                     width: parent.width
-                                    color: networkRow.network.active ? Palette.foreground : Palette.mutedForeground
+                                    color: networkRow.network.active ? Theme.Palette.foreground : Theme.Palette.mutedForeground
                                     text: networkRow.network.ssid
                                     font.family: "Geist"
                                     font.pixelSize: 13
@@ -332,7 +332,7 @@ Item {
 
                                 Text {
                                     width: parent.width
-                                    color: Palette.mutedForeground
+                                    color: Theme.Palette.mutedForeground
                                     text: `${networkRow.network.signal}% - ${networkRow.network.security || "Open"}`
                                     font.family: "Geist"
                                     font.pixelSize: 11
@@ -346,7 +346,7 @@ Item {
                             id: stateLabel
 
                             anchors.verticalCenter: parent.verticalCenter
-                            color: networkRow.network.active ? Palette.foreground : Palette.mutedForeground
+                            color: networkRow.network.active ? Theme.Palette.foreground : Theme.Palette.mutedForeground
                             text: networkRow.network.active ? "Connected" : "Join"
                             font.family: "Geist"
                             font.pixelSize: 11
@@ -361,7 +361,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             clip: true
 
-                            Image {
+                            Theme.ThemedIcon {
                                 anchors.centerIn: parent
                                 width: 14
                                 height: 14
@@ -388,7 +388,7 @@ Item {
         Text {
             width: parent.width
             visible: root.networkState.noticeText.length > 0
-            color: root.networkState.noticeIsError ? "#ff9b92" : Palette.mutedForeground
+            color: root.networkState.noticeIsError ? Theme.Palette.danger : Theme.Palette.mutedForeground
             text: root.networkState.noticeText
             font.family: "Geist"
             font.pixelSize: 12

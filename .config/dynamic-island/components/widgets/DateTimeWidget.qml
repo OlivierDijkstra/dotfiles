@@ -1,5 +1,5 @@
 import QtQuick
-import "../Palette.js" as Palette
+import ".." as Theme
 
 Item {
     id: root
@@ -40,7 +40,7 @@ Item {
             id: label
 
             anchors.verticalCenter: parent.verticalCenter
-            color: Palette.foreground
+            color: Theme.Palette.foreground
             text: Qt.locale().toString(root.now, "ddd MMM d - HH:mm").toLowerCase()
             font.family: "Geist"
             font.pixelSize: 14

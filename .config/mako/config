@@ -1,69 +1,53 @@
-# General settings
+# Generated from .config/theme/palette.json by scripts/generate-theme.
 markup=1
 actions=1
 sort=-time
 layer=overlay
 anchor=top-right
 max-visible=5
-
-# Format
 font=Geist 12
 width=400
 height=100
 margin=10
 padding=15
-border-size=2
-border-radius=5
-
-# Colors from theme
-background-color=#F3ECE3F2
-text-color=#2C2622
-border-color=#D8C8B7
-progress-color=#D66A52
-
-# Format
-format=<b>%s</b> <span color="#7D7268">(%a)</span>\n%b
-
-# Icons
+border-size=1
+border-radius=14
+format=<b>%s</b> (%a)\n%b
 icons=true
-
-# Interaction
 on-button-left=invoke-default-action
 on-button-middle=dismiss-all
 on-button-right=dismiss
 on-touch=dismiss
-
-# Timeout settings (in milliseconds)
 default-timeout=5000
-
-# History
 max-history=10
 history=1
+group-by=app-name,summary
 
-# Hidden format
+[mode=light]
+background-color=#FFFFFFF2
+text-color=#171717
+border-color=#E5E5E5
+progress-color=#171717
+
+[mode=dark]
+background-color=#252525F2
+text-color=#F5F5F5
+border-color=#333333
+progress-color=#F5F5F5
+
 [hidden]
 format=Hidden: %h [%t]
 
-# Urgency levels
 [urgency=low]
-text-color=#7D7268
 default-timeout=10000
 
-[urgency=low actionable]
-border-color=#C9B7A5
-
-[urgency=normal actionable]
-border-color=#D66A52
-
-[urgency=high]
-border-color=#C75A44
+[mode=light urgency=high]
+border-color=#B84E4E
 default-timeout=0
 
-[urgency=high actionable]
-border-color=#D66A52
-
-# Group settings
-group-by=app-name,summary
+[mode=dark urgency=high]
+border-color=#E57373
+default-timeout=0
 
 [grouped]
 format=(%g) <b>%s</b>\n%b

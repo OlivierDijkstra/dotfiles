@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import "../Palette.js" as Palette
+import ".." as Theme
 
 Item {
     id: root
@@ -58,7 +58,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
-                    color: root.bluetoothState.adapterEnabled ? "#f2f2f2" : "#101013"
+                    color: root.bluetoothState.adapterEnabled ? Theme.Palette.accent : Theme.Palette.surface3
 
                     Behavior on color {
                         ColorAnimation {
@@ -74,7 +74,7 @@ Item {
                     radius: 11
                     x: root.bluetoothState.adapterEnabled ? (parent.width - width - 3) : 3
                     y: 3
-                    color: root.bluetoothState.adapterEnabled ? "#050505" : "#f7f7f8"
+                    color: root.bluetoothState.adapterEnabled ? Theme.Palette.accentForeground : Theme.Palette.foreground
 
                     Behavior on x {
                         NumberAnimation {
@@ -125,10 +125,10 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: 16
-                    color: closeArea.containsMouse ? "#1a1a1b" : "#121214"
+                    color: closeArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
                 }
 
-                Image {
+                Theme.ThemedIcon {
                     anchors.centerIn: parent
                     width: 14
                     height: 14
@@ -156,7 +156,7 @@ Item {
             Text {
                 width: parent.width
                 visible: !root.bluetoothState.adapterAvailable
-                color: Palette.mutedForeground
+                color: Theme.Palette.mutedForeground
                 text: "No Bluetooth adapter was detected."
                 font.family: "Geist"
                 font.pixelSize: 13
@@ -166,7 +166,7 @@ Item {
             Text {
                 width: parent.width
                 visible: root.bluetoothState.adapterAvailable && root.devices.length === 0
-                color: Palette.mutedForeground
+                color: Theme.Palette.mutedForeground
                 text: root.bluetoothState.adapterEnabled
                     ? "No Bluetooth devices are available right now."
                     : "Turn Bluetooth on to see saved and nearby devices."
@@ -200,7 +200,7 @@ Item {
                     Rectangle {
                         anchors.fill: parent
                         radius: 16
-                        color: deviceRow.device.connected ? "#101318" : (deviceArea.containsMouse ? "#161618" : "transparent")
+                        color: deviceRow.device.connected ? Theme.Palette.selectedBackground : (deviceArea.containsMouse ? Theme.Palette.hoverBackground : "transparent")
                     }
 
                     Row {
@@ -212,7 +212,7 @@ Item {
                         Text {
                             width: parent.width - actionLabel.implicitWidth - parent.spacing
                             anchors.verticalCenter: parent.verticalCenter
-                            color: deviceRow.device.connected ? Palette.foreground : Palette.mutedForeground
+                            color: deviceRow.device.connected ? Theme.Palette.foreground : Theme.Palette.mutedForeground
                             text: root.bluetoothState.displayName(deviceRow.device)
                             font.family: "Geist"
                             font.pixelSize: 13
@@ -224,7 +224,7 @@ Item {
                             id: actionLabel
 
                             anchors.verticalCenter: parent.verticalCenter
-                            color: deviceRow.device.connected ? Palette.foreground : Palette.mutedForeground
+                            color: deviceRow.device.connected ? Theme.Palette.foreground : Theme.Palette.mutedForeground
                             text: root.bluetoothState.deviceActionLabel(deviceRow.device)
                             font.family: "Geist"
                             font.pixelSize: 11

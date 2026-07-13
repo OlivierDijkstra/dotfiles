@@ -1,17 +1,57 @@
-/* Global color configuration - CSS version */
-/* These variables can be used across different applications */
+/* Generated from .config/theme/palette.json by scripts/generate-theme. */
 
-/* Main colors */
-@define-color primary #2C2622;       /* Primary text color */
-@define-color muted #7D7268;         /* Muted/secondary text color */
-@define-color active #D66A52;        /* Active/highlighted elements */
-@define-color active-soft #E8B7A8;   /* Secondary accent */
-@define-color background #F3ECE3;    /* Main background color */
-@define-color background-alt #EDE4D8; /* Alternative background color */
-@define-color border #C9B7A5;        /* Border color */
+:root, .light {
+  --surface-1: #FAFAFA;
+  --surface-2: #FCFCFC;
+  --surface-3: #FFFFFF;
+  --surface-4: #FFFFFF;
+  --surface-5: #FFFFFF;
+  --surface-6: #FFFFFF;
+  --surface-7: #FFFFFF;
+  --surface-8: #FFFFFF;
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-muted: #737373;
+  --border: #E5E5E5;
+  --border-strong: #D4D4D4;
+  --hover: #F5F5F5;
+  --selected: #E5E5E5;
+  --accent: #171717;
+  --accent-foreground: #FFFFFF;
+  --shadow-1: 0 0 0 1px rgb(0 0 0 / 0.06);
+  --shadow-2: 0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06);
+  --shadow-3: 0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06);
+  --shadow-4: 0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06);
+  --shadow-5: 0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06), 0 12px 12px -6px rgb(0 0 0 / 0.06);
+  --shadow-6: 0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06), 0 12px 12px -6px rgb(0 0 0 / 0.06), 0 24px 24px -12px rgb(0 0 0 / 0.06);
+  --shadow-7: 0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06), 0 12px 12px -6px rgb(0 0 0 / 0.06), 0 24px 24px -12px rgb(0 0 0 / 0.06), 0 48px 48px -24px rgb(0 0 0 / 0.06);
+  --shadow-8: 0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06), 0 12px 12px -6px rgb(0 0 0 / 0.06), 0 24px 24px -12px rgb(0 0 0 / 0.06), 0 48px 48px -24px rgb(0 0 0 / 0.06), 0 96px 96px -48px rgb(0 0 0 / 0.06);
+}
 
-/* Alert colors */
-@define-color success #9BAE8A;       /* Success messages and indicators */
-@define-color error #C75A44;         /* Error messages and indicators */
-@define-color warning #D08A5B;       /* Warning messages and indicators */
-@define-color info #B79E86;          /* Information messages and indicators */
+.dark {
+  --surface-1: #171717;
+  --surface-2: #1E1E1E;
+  --surface-3: #252525;
+  --surface-4: #2C2C2C;
+  --surface-5: #333333;
+  --surface-6: #3A3A3A;
+  --surface-7: #414141;
+  --surface-8: #484848;
+  --text-primary: #F5F5F5;
+  --text-secondary: #D4D4D4;
+  --text-muted: #A3A3A3;
+  --border: #333333;
+  --border-strong: #484848;
+  --hover: #2C2C2C;
+  --selected: #414141;
+  --accent: #F5F5F5;
+  --accent-foreground: #171717;
+  --shadow-1: inset 0 0 0 1px #ffffff05;
+  --shadow-2: inset 0 1px 0 #ffffff03, inset 0 0 0 1px #ffffff05, 0 1px 1px -0.5px #0000002e;
+  --shadow-3: inset 0 1px 0 #ffffff05, inset 0 0 0 1px #ffffff05, 0 0 0 1px #0000001f, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e;
+  --shadow-4: inset 0 1px 0 #ffffff05, inset 0 0 0 1px #ffffff0a, 0 0 0 1px #00000024, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e;
+  --shadow-5: inset 0 1px 0 #ffffff0a, inset 0 0 0 1px #ffffff0a, 0 0 0 1px #00000029, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e, 0 12px 12px -6px #0000002e;
+  --shadow-6: inset 0 1px 0 #ffffff0a, inset 0 0 0 1px #ffffff0f, 0 0 0 1px #0000002e, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e, 0 12px 12px -6px #0000002e, 0 24px 24px -12px #0000002e;
+  --shadow-7: inset 0 1px 0 #ffffff0f, inset 0 0 0 1px #ffffff0f, 0 0 0 1px #0003, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e, 0 12px 12px -6px #0000002e, 0 24px 24px -12px #0000002e, 0 48px 48px -24px #0000002e;
+  --shadow-8: inset 0 1px 0 #ffffff0f, inset 0 0 0 1px #ffffff0f, 0 0 0 1px #00000038, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e, 0 12px 12px -6px #0000002e, 0 24px 24px -12px #0000002e, 0 48px 48px -24px #0000002e, 0 96px 96px -48px #0000002e;
+}

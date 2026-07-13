@@ -1,0 +1,547 @@
+#!/usr/bin/env python3
+"""Generate application themes from .config/theme/palette.json."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent.parent
+PALETTE_PATH = ROOT / ".config/theme/palette.json"
+GENERATED_NOTE = "Generated from .config/theme/palette.json by scripts/generate-theme."
+
+
+def load_palette() -> dict:
+    palette = json.loads(PALETTE_PATH.read_text())
+    for mode in ("light", "dark"):
+        colors = palette[mode]
+        if len(colors["surfaces"]) != 8:
+            raise ValueError(f"{mode}.surfaces must contain exactly eight colors")
+        for group in colors.values():
+            values = group if isinstance(group, list) else group.values()
+            for color in values:
+                if not re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
+                    raise ValueError(f"invalid color in {mode}: {color}")
+    return palette
+
+
+def alpha(color: str, value: str) -> str:
+    return f"{color}{value}"
+
+
+def rgb(color: str) -> tuple[int, int, int]:
+    value = color.removeprefix("#")
+    return tuple(int(value[index : index + 2], 16) for index in (0, 2, 4))
+
+
+def rgba(color: str, opacity: float) -> str:
+    red, green, blue = rgb(color)
+    return f"rgba({red}, {green}, {blue}, {opacity:.2f})"
+
+
+def generated_css(palette: dict) -> str:
+    light_shadows = [
+        "0 0 0 1px rgb(0 0 0 / 0.06)",
+        "0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06)",
+        "0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06)",
+        "0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06)",
+        "0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06), 0 12px 12px -6px rgb(0 0 0 / 0.06)",
+        "0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06), 0 12px 12px -6px rgb(0 0 0 / 0.06), 0 24px 24px -12px rgb(0 0 0 / 0.06)",
+        "0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06), 0 12px 12px -6px rgb(0 0 0 / 0.06), 0 24px 24px -12px rgb(0 0 0 / 0.06), 0 48px 48px -24px rgb(0 0 0 / 0.06)",
+        "0 0 0 1px rgb(0 0 0 / 0.06), 0 1px 1px -0.5px rgb(0 0 0 / 0.06), 0 3px 3px -1.5px rgb(0 0 0 / 0.06), 0 6px 6px -3px rgb(0 0 0 / 0.06), 0 12px 12px -6px rgb(0 0 0 / 0.06), 0 24px 24px -12px rgb(0 0 0 / 0.06), 0 48px 48px -24px rgb(0 0 0 / 0.06), 0 96px 96px -48px rgb(0 0 0 / 0.06)",
+    ]
+    dark_shadows = [
+        "inset 0 0 0 1px #ffffff05",
+        "inset 0 1px 0 #ffffff03, inset 0 0 0 1px #ffffff05, 0 1px 1px -0.5px #0000002e",
+        "inset 0 1px 0 #ffffff05, inset 0 0 0 1px #ffffff05, 0 0 0 1px #0000001f, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e",
+        "inset 0 1px 0 #ffffff05, inset 0 0 0 1px #ffffff0a, 0 0 0 1px #00000024, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e",
+        "inset 0 1px 0 #ffffff0a, inset 0 0 0 1px #ffffff0a, 0 0 0 1px #00000029, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e, 0 12px 12px -6px #0000002e",
+        "inset 0 1px 0 #ffffff0a, inset 0 0 0 1px #ffffff0f, 0 0 0 1px #0000002e, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e, 0 12px 12px -6px #0000002e, 0 24px 24px -12px #0000002e",
+        "inset 0 1px 0 #ffffff0f, inset 0 0 0 1px #ffffff0f, 0 0 0 1px #0003, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e, 0 12px 12px -6px #0000002e, 0 24px 24px -12px #0000002e, 0 48px 48px -24px #0000002e",
+        "inset 0 1px 0 #ffffff0f, inset 0 0 0 1px #ffffff0f, 0 0 0 1px #00000038, 0 1px 1px -0.5px #0000002e, 0 3px 3px -1.5px #0000002e, 0 6px 6px -3px #0000002e, 0 12px 12px -6px #0000002e, 0 24px 24px -12px #0000002e, 0 48px 48px -24px #0000002e, 0 96px 96px -48px #0000002e",
+    ]
+    blocks = [f"/* {GENERATED_NOTE} */"]
+    for mode, shadows in (("light", light_shadows), ("dark", dark_shadows)):
+        colors = palette[mode]
+        selector = ":root, .light" if mode == "light" else ".dark"
+        lines = [f"{selector} {{"]
+        lines.extend(
+            f"  --surface-{index}: {color};"
+            for index, color in enumerate(colors["surfaces"], start=1)
+        )
+        lines.extend(
+            [
+                f"  --text-primary: {colors['text']['primary']};",
+                f"  --text-secondary: {colors['text']['secondary']};",
+                f"  --text-muted: {colors['text']['muted']};",
+                f"  --border: {colors['borders']['default']};",
+                f"  --border-strong: {colors['borders']['strong']};",
+                f"  --hover: {colors['interaction']['hover']};",
+                f"  --selected: {colors['interaction']['selected']};",
+                f"  --accent: {colors['accent']['default']};",
+                f"  --accent-foreground: {colors['accent']['foreground']};",
+            ]
+        )
+        lines.extend(
+            f"  --shadow-{index}: {shadow};"
+            for index, shadow in enumerate(shadows, start=1)
+        )
+        lines.append("}")
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks) + "\n"
+
+
+def hypr_palette(palette: dict) -> str:
+    def mode_table(mode: str) -> str:
+        colors = palette[mode]
+        surfaces = colors["surfaces"]
+        status = colors["status"]
+        entries = {
+            **{f"surface{index}": color for index, color in enumerate(surfaces, 1)},
+            "foreground": colors["text"]["primary"],
+            "muted": colors["text"]["muted"],
+            "border": colors["borders"]["default"],
+            "borderStrong": colors["borders"]["strong"],
+            "hover": colors["interaction"]["hover"],
+            "selected": colors["interaction"]["selected"],
+            "accent": colors["accent"]["default"],
+            "accentForeground": colors["accent"]["foreground"],
+            "shadow": "rgba(0000001A)" if mode == "light" else "rgba(0000004D)",
+            **status,
+        }
+        body = "\n".join(f'        {key} = "{value}",' for key, value in entries.items())
+        return f"    {mode} = {{\n{body}\n    }},"
+
+    return f'''-- {GENERATED_NOTE}
+local palettes = {{
+{mode_table("light")}
+{mode_table("dark")}
+}}
+
+local mode = "dark"
+local home = os.getenv("HOME") or "/home/oli"
+local state = io.open(home .. "/.local/state/theme-mode/state.json", "r")
+
+if state then
+    local contents = state:read("*a")
+    state:close()
+    mode = contents:match('"applied"%s*:%s*"(light)"') and "light" or "dark"
+end
+
+return palettes[mode]
+'''
+
+
+def quickshell_palette(palette: dict) -> str:
+    dark = palette["dark"]
+
+    def choice(path: tuple[str, ...]) -> str:
+        value = dark
+        for key in path:
+            value = value[key]
+        return f'"{value}"'
+
+    surface_lines = "\n".join(
+        f'    readonly property color surface{index}: "{dark["surfaces"][index - 1]}"'
+        for index in range(1, 9)
+    )
+    return f'''pragma Singleton
+import QtQuick
+
+QtObject {{
+    id: root
+
+{surface_lines}
+    readonly property color foreground: {choice(("text", "primary"))}
+    readonly property color secondaryForeground: {choice(("text", "secondary"))}
+    readonly property color mutedForeground: {choice(("text", "muted"))}
+    readonly property color disabledForeground: {choice(("text", "disabled"))}
+    readonly property color border: {choice(("borders", "default"))}
+    readonly property color borderStrong: {choice(("borders", "strong"))}
+    readonly property color hoverBackground: {choice(("interaction", "hover"))}
+    readonly property color selectedBackground: {choice(("interaction", "selected"))}
+    readonly property color accent: {choice(("accent", "default"))}
+    readonly property color accentForeground: {choice(("accent", "foreground"))}
+    readonly property color danger: {choice(("status", "red"))}
+
+    readonly property color islandBackground: "#000000"
+    readonly property color debugPanelBackground: root.surface2
+    readonly property color debugPanelBorder: root.border
+    readonly property color chipBackground: root.surface3
+    readonly property color chipBorder: root.borderStrong
+    readonly property color chipActiveBackground: root.selectedBackground
+    readonly property color chipActiveForeground: root.foreground
+    readonly property color outline: root.border
+    readonly property color trackBackground: root.surface4
+    readonly property color trackFill: root.accent
+
+}}
+'''
+
+
+def ghostty_theme(mode: str, colors: dict) -> str:
+    ansi = colors["ansi"]
+    palette_order = [
+        "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white",
+        "brightBlack", "brightRed", "brightGreen", "brightYellow", "brightBlue",
+        "brightMagenta", "brightCyan", "brightWhite",
+    ]
+    lines = [
+        f"# {GENERATED_NOTE}",
+        f"foreground = {colors['text']['primary']}",
+        f"background = {colors['surfaces'][0]}",
+        f"cursor-color = {colors['accent']['default']}",
+        f"selection-background = {colors['interaction']['selected']}",
+        f"selection-foreground = {colors['text']['primary']}",
+        "",
+    ]
+    lines.extend(f"palette = {index}={ansi[name]}" for index, name in enumerate(palette_order))
+    return "\n".join(lines) + "\n"
+
+
+def btop_theme(colors: dict) -> str:
+    surface = colors["surfaces"]
+    text = colors["text"]
+    status = colors["status"]
+    values = {
+        "main_bg": surface[0], "main_fg": text["primary"], "title": colors["accent"]["default"],
+        "hi_fg": colors["accent"]["default"], "selected_bg": colors["interaction"]["selected"],
+        "selected_fg": text["primary"], "inactive_fg": text["muted"], "proc_misc": text["secondary"],
+        "cpu_box": colors["borders"]["strong"], "mem_box": colors["borders"]["strong"],
+        "net_box": colors["borders"]["strong"], "proc_box": colors["borders"]["strong"],
+        "div_line": colors["borders"]["default"], "temp_start": status["green"],
+        "temp_mid": status["yellow"], "temp_end": status["red"], "cpu_start": status["blue"],
+        "cpu_mid": status["magenta"], "cpu_end": status["red"], "free_start": status["green"],
+        "free_mid": status["cyan"], "free_end": status["blue"], "cached_start": status["yellow"],
+        "cached_mid": status["magenta"], "cached_end": status["blue"], "available_start": status["green"],
+        "available_mid": status["cyan"], "available_end": status["blue"], "used_start": status["yellow"],
+        "used_mid": status["magenta"], "used_end": status["red"], "download_start": status["cyan"],
+        "download_mid": status["blue"], "download_end": status["magenta"], "upload_start": status["green"],
+        "upload_mid": status["yellow"], "upload_end": status["red"], "process_start": status["cyan"],
+        "process_mid": status["blue"], "process_end": status["magenta"],
+    }
+    lines = [f"# {GENERATED_NOTE}"]
+    lines.extend(f'theme[{key}]="{value}"' for key, value in values.items())
+    return "\n".join(lines) + "\n"
+
+
+def vicinae_theme(mode: str, colors: dict) -> str:
+    surface, text = colors["surfaces"], colors["text"]
+    status, ansi = colors["status"], colors["ansi"]
+    name = "os1" if mode == "light" else "os1-night"
+    inherited = "vicinae-light" if mode == "light" else "vicinae-dark"
+    return f'''# {GENERATED_NOTE}
+[meta]
+name = "{name}"
+description = "Neutral nested surfaces"
+variant = "{mode}"
+inherits = "{inherited}"
+
+[colors.core]
+accent = "{colors['accent']['default']}"
+accent_foreground = "{colors['accent']['foreground']}"
+background = "{surface[0]}"
+foreground = "{text['primary']}"
+secondary_background = "{surface[1]}"
+border = "{colors['borders']['default']}"
+
+[colors.main_window]
+border = "colors.core.border"
+footer = {{ background = "{surface[1]}" }}
+
+[colors.settings_window]
+border = "colors.core.border"
+
+[colors.accents]
+blue = "{status['blue']}"
+green = "{status['green']}"
+magenta = "{status['magenta']}"
+orange = "{status['yellow']}"
+red = "{status['red']}"
+yellow = "{status['yellow']}"
+cyan = "{status['cyan']}"
+purple = "{status['magenta']}"
+
+[colors.shortcut]
+border = "colors.core.border"
+
+[colors.text]
+default = "colors.core.foreground"
+muted = "{text['muted']}"
+danger = "{status['red']}"
+success = "{status['green']}"
+placeholder = "{text['disabled']}"
+selection = {{ background = "{colors['interaction']['selected']}", foreground = "{text['primary']}" }}
+
+[colors.text.links]
+default = "{status['blue']}"
+visited = "{status['magenta']}"
+
+[colors.input]
+border = "{colors['borders']['default']}"
+border_focus = "{colors['borders']['focus']}"
+border_error = "{status['red']}"
+
+[colors.button.primary]
+background = "{colors['accent']['default']}"
+foreground = "{colors['accent']['foreground']}"
+hover = {{ background = "{colors['interaction']['active']}" }}
+focus = {{ outline = "{colors['borders']['focus']}" }}
+
+[colors.list.item.selection]
+background = "{colors['interaction']['selected']}"
+foreground = "{text['primary']}"
+secondary_background = "{colors['interaction']['hover']}"
+secondary_foreground = "{text['secondary']}"
+
+[colors.grid.item]
+background = "{surface[1]}"
+hover = {{ outline = "{colors['borders']['focus']}" }}
+selection = {{ outline = "{colors['borders']['strong']}" }}
+
+[colors.scrollbars]
+background = "{colors['borders']['strong']}"
+
+[colors.loading]
+bar = "{colors['accent']['default']}"
+spinner = "{colors['accent']['default']}"
+'''
+
+
+def yazi_theme(colors: dict) -> str:
+    surface, text = colors["surfaces"], colors["text"]
+    status = colors["status"]
+    accent, accent_fg = colors["accent"]["default"], colors["accent"]["foreground"]
+    selected = colors["interaction"]["selected"]
+    return f'''# {GENERATED_NOTE}
+[mgr]
+cwd = {{ fg = "{status['blue']}" }}
+find_keyword = {{ fg = "{accent}", bold = true, underline = true }}
+find_position = {{ fg = "{status['blue']}", bg = "reset", bold = true }}
+marker_copied = {{ fg = "{status['green']}", bg = "{status['green']}" }}
+marker_cut = {{ fg = "{status['red']}", bg = "{status['red']}" }}
+marker_marked = {{ fg = "{status['blue']}", bg = "{status['blue']}" }}
+marker_selected = {{ fg = "{accent}", bg = "{accent}" }}
+count_copied = {{ fg = "{accent_fg}", bg = "{status['green']}" }}
+count_cut = {{ fg = "{accent_fg}", bg = "{status['red']}" }}
+count_selected = {{ fg = "{accent_fg}", bg = "{accent}" }}
+border_symbol = "│"
+border_style = {{ fg = "{colors['borders']['strong']}" }}
+
+[tabs]
+active = {{ fg = "{accent_fg}", bg = "{accent}", bold = true }}
+inactive = {{ fg = "{text['muted']}", bg = "{surface[1]}" }}
+
+[mode]
+normal_main = {{ fg = "{accent_fg}", bg = "{accent}", bold = true }}
+normal_alt = {{ fg = "{text['secondary']}", bg = "{surface[1]}" }}
+select_main = {{ fg = "{text['primary']}", bg = "{selected}", bold = true }}
+select_alt = {{ fg = "{text['secondary']}", bg = "{surface[1]}" }}
+unset_main = {{ fg = "{accent_fg}", bg = "{status['red']}", bold = true }}
+unset_alt = {{ fg = "{status['red']}", bg = "{surface[1]}" }}
+
+[status]
+perm_sep = {{ fg = "{text['disabled']}" }}
+perm_type = {{ fg = "{status['blue']}" }}
+perm_read = {{ fg = "{status['cyan']}" }}
+perm_write = {{ fg = "{status['yellow']}" }}
+perm_exec = {{ fg = "{status['green']}" }}
+progress_label = {{ fg = "{text['primary']}", bold = true }}
+progress_normal = {{ fg = "{status['blue']}", bg = "{colors['borders']['default']}" }}
+progress_error = {{ fg = "{accent_fg}", bg = "{status['red']}" }}
+
+[pick]
+border = {{ fg = "{colors['borders']['focus']}" }}
+active = {{ fg = "{text['primary']}", bold = true }}
+inactive = {{ fg = "{text['muted']}" }}
+
+[input]
+border = {{ fg = "{colors['borders']['focus']}" }}
+title = {{ fg = "{status['blue']}" }}
+value = {{ fg = "{text['primary']}" }}
+selected = {{ reversed = true }}
+
+[cmp]
+border = {{ fg = "{colors['borders']['focus']}" }}
+
+[tasks]
+border = {{ fg = "{colors['borders']['focus']}" }}
+title = {{ fg = "{status['blue']}" }}
+hovered = {{ fg = "{accent}", bold = true }}
+
+[which]
+mask = {{ bg = "{surface[1]}" }}
+cand = {{ fg = "{status['blue']}" }}
+rest = {{ fg = "{text['muted']}" }}
+desc = {{ fg = "{text['primary']}" }}
+separator = "  "
+separator_style = {{ fg = "{text['disabled']}" }}
+
+[help]
+on = {{ fg = "{status['blue']}" }}
+run = {{ fg = "{accent}" }}
+hovered = {{ reversed = true, bold = true }}
+footer = {{ fg = "{accent_fg}", bg = "{accent}" }}
+
+[spot]
+border = {{ fg = "{colors['borders']['focus']}" }}
+title = {{ fg = "{status['blue']}" }}
+tbl_col = {{ fg = "{status['blue']}" }}
+tbl_cell = {{ fg = "{text['primary']}", bg = "{selected}" }}
+
+[notify]
+title_info = {{ fg = "{status['blue']}" }}
+title_warn = {{ fg = "{status['yellow']}" }}
+title_error = {{ fg = "{status['red']}" }}
+
+[filetype]
+rules = [
+  {{ mime = "image/*", fg = "{status['magenta']}" }},
+  {{ mime = "{{audio,video}}/*", fg = "{status['yellow']}" }},
+  {{ mime = "application/{{zip,rar,7z*,tar,gzip,xz,zstd,bzip*,lzma,compress,archive,cpio,arj,xar,ms-cab*}}", fg = "{status['red']}" }},
+  {{ mime = "application/{{pdf,doc,rtf}}", fg = "{status['green']}" }},
+  {{ mime = "vfs/{{absent,stale}}", fg = "{text['muted']}" }},
+  {{ url = "*", fg = "{text['primary']}" }},
+  {{ url = "*/", fg = "{status['blue']}" }},
+]
+'''
+
+
+def rofi_colors(colors: dict) -> str:
+    return f'''/* {GENERATED_NOTE} */
+* {{
+    bg0: {rgba(colors['surfaces'][0], 0.96)};
+    bg1: {rgba(colors['surfaces'][1], 1)};
+    bg2: {rgba(colors['interaction']['hover'], 1)};
+    bg3: {rgba(colors['interaction']['selected'], 1)};
+    fg0: {rgba(colors['text']['primary'], 1)};
+    fg1: {rgba(colors['text']['secondary'], 1)};
+    fg2: {rgba(colors['text']['muted'], 1)};
+    fg3: {rgba(colors['text']['disabled'], 1)};
+    border0: {rgba(colors['borders']['default'], 1)};
+    border1: {rgba(colors['borders']['strong'], 1)};
+    accent: {rgba(colors['accent']['default'], 1)};
+    accent-fg: {rgba(colors['accent']['foreground'], 1)};
+}}
+'''
+
+
+def mako_config(palette: dict) -> str:
+    def mode_section(mode: str) -> str:
+        colors = palette[mode]
+        return f'''[mode={mode}]
+background-color={alpha(colors['surfaces'][2], 'F2')}
+text-color={colors['text']['primary']}
+border-color={colors['borders']['default']}
+progress-color={colors['accent']['default']}'''
+
+    return f'''# {GENERATED_NOTE}
+markup=1
+actions=1
+sort=-time
+layer=overlay
+anchor=top-right
+max-visible=5
+font=Geist 12
+width=400
+height=100
+margin=10
+padding=15
+border-size=1
+border-radius=14
+format=<b>%s</b> (%a)\\n%b
+icons=true
+on-button-left=invoke-default-action
+on-button-middle=dismiss-all
+on-button-right=dismiss
+on-touch=dismiss
+default-timeout=5000
+max-history=10
+history=1
+group-by=app-name,summary
+
+{mode_section('light')}
+
+{mode_section('dark')}
+
+[hidden]
+format=Hidden: %h [%t]
+
+[urgency=low]
+default-timeout=10000
+
+[mode=light urgency=high]
+border-color={palette['light']['status']['red']}
+default-timeout=0
+
+[mode=dark urgency=high]
+border-color={palette['dark']['status']['red']}
+default-timeout=0
+
+[grouped]
+format=(%g) <b>%s</b>\\n%b
+'''
+
+
+def color_conf(colors: dict) -> str:
+    return "\n".join(
+        [
+            f"# {GENERATED_NOTE}",
+            f"$active = rgb({colors['accent']['default'][1:]})",
+            f"$activeAlt = rgb({colors['interaction']['selected'][1:]})",
+            f"$background = rgb({colors['surfaces'][0][1:]})",
+            f"$backgroundAlt = rgb({colors['surfaces'][1][1:]})",
+        ]
+    ) + "\n"
+
+
+def outputs(palette: dict) -> dict[Path, str]:
+    generated = {
+        ROOT / ".config/theme/colors.css": generated_css(palette),
+        ROOT / ".config/theme/colors-light.conf": color_conf(palette["light"]),
+        ROOT / ".config/theme/colors-dark.conf": color_conf(palette["dark"]),
+        ROOT / ".config/hypr/config/palette.lua": hypr_palette(palette),
+        ROOT / ".config/dynamic-island/components/Palette.qml": quickshell_palette(palette),
+        ROOT / ".config/mako/config": mako_config(palette),
+    }
+    for mode in ("light", "dark"):
+        colors = palette[mode]
+        ghostty_name = "os1" if mode == "light" else "os1-night"
+        btop_name = "os1.theme" if mode == "light" else "os1-night.theme"
+        vicinae_name = "os1.toml" if mode == "light" else "os1-night.toml"
+        yazi_name = "os1-light.yazi" if mode == "light" else "os1-dark.yazi"
+        generated[ROOT / f".config/ghostty/themes/{ghostty_name}"] = ghostty_theme(mode, colors)
+        generated[ROOT / f".config/btop/themes/{btop_name}"] = btop_theme(colors)
+        generated[ROOT / f".local/share/vicinae/themes/{vicinae_name}"] = vicinae_theme(mode, colors)
+        generated[ROOT / f".config/yazi/flavors/{yazi_name}/flavor.toml"] = yazi_theme(colors)
+        generated[ROOT / f".config/rofi/colors-{mode}.rasi"] = rofi_colors(colors)
+    return generated
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true", help="fail when generated files are stale")
+    args = parser.parse_args()
+    palette = load_palette()
+    stale = []
+    for path, content in outputs(palette).items():
+        if not path.exists() or path.read_text() != content:
+            stale.append(path)
+            if not args.check:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content)
+    if args.check and stale:
+        for path in stale:
+            print(path.relative_to(ROOT), file=sys.stderr)
+        return 1
+    if not args.check:
+        print(f"generated {len(outputs(palette))} theme files")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

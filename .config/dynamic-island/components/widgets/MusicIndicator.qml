@@ -1,12 +1,12 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import "../Palette.js" as Palette
+import ".." as Theme
 
 Item {
     id: root
 
     property bool playing: false
-    property color color: Palette.trackFill
+    property color color: Theme.Palette.trackFill
     property int barCount: 4
     property real barWidth: 3
     property real barSpacing: 3

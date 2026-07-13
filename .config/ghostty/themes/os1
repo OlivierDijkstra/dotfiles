@@ -1,23 +1,23 @@
-# OS1-inspired warm palette
-foreground = #2C2622
-background = #F3ECE3
-cursor-color = #D66A52
-selection-background = #E8B7A8
-selection-foreground = #2C2622
+# Generated from .config/theme/palette.json by scripts/generate-theme.
+foreground = #171717
+background = #FAFAFA
+cursor-color = #171717
+selection-background = #E5E5E5
+selection-foreground = #171717
 
-palette = 0=#2C2622
-palette = 1=#C75A44
-palette = 2=#8E9C75
-palette = 3=#C4935E
-palette = 4=#6F8FAF
-palette = 5=#AA7D8A
-palette = 6=#6D9C95
-palette = 7=#DCCFC2
-palette = 8=#7D7268
-palette = 9=#D66A52
-palette = 10=#9FAA84
-palette = 11=#D0A777
-palette = 12=#89A5C0
-palette = 13=#B68A99
-palette = 14=#7DAEA8
-palette = 15=#FFF8EF
+palette = 0=#171717
+palette = 1=#B84E4E
+palette = 2=#3F7D58
+palette = 3=#916622
+palette = 4=#3F6F9F
+palette = 5=#7C5E92
+palette = 6=#3E7B7D
+palette = 7=#D4D4D4
+palette = 8=#737373
+palette = 9=#CC6262
+palette = 10=#55966C
+palette = 11=#AA7D35
+palette = 12=#5787B8
+palette = 13=#9476A9
+palette = 14=#569496
+palette = 15=#FFFFFF

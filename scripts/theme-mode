@@ -33,14 +33,12 @@ YAZI_THEME_SRC_DIR="$DOTFILES_DIR/.config/yazi"
 YAZI_LIGHT_THEME_SRC="$YAZI_THEME_SRC_DIR/theme-light.toml"
 YAZI_DARK_THEME_SRC="$YAZI_THEME_SRC_DIR/theme-dark.toml"
 
-COLOR_DIR="$HOME_DIR/.config/theme"
-COLOR_CONF_ACTIVE="$COLOR_DIR/colors.conf"
-COLOR_CONF_LIGHT="$COLOR_DIR/colors-light.conf"
-COLOR_CONF_DARK="$COLOR_DIR/colors-dark.conf"
+ROFI_THEME_SRC_DIR="$DOTFILES_DIR/.config/rofi"
+ROFI_THEME_ACTIVE="$STATE_DIR/rofi-colors.rasi"
 
-HYPERPAPER_CONFIG="$HOME_DIR/.config/hypr/hyprpaper.conf"
-HYPERPAPER_LIGHT_WALLPAPER="$HOME_DIR/Pictures/wallpapers/OS1.png"
-HYPERPAPER_DARK_WALLPAPER="$HOME_DIR/Pictures/wallpapers/OS2.png"
+HYPERPAPER_RUNTIME_CONFIG="$STATE_DIR/hyprpaper.conf"
+HYPERPAPER_LIGHT_WALLPAPER="$HOME_DIR/Pictures/wallpapers/eink.jpg"
+HYPERPAPER_DARK_WALLPAPER="$HOME_DIR/Pictures/wallpapers/eink_dark.jpg"
 
 QUIET=0
 AUTO_SOURCE="clock"
@@ -152,6 +150,17 @@ safe_vicinae_reload() {
   fi
 }
 
+set_mako_mode() {
+  local mode="$1"
+
+  if ! command -v makoctl >/dev/null 2>&1; then
+    return 0
+  fi
+
+  makoctl reload >/dev/null 2>&1 || true
+  makoctl mode -s "$mode" >/dev/null 2>&1 || true
+}
+
 safe_hyprpaper_reload() {
   if ! command -v hyprpaper >/dev/null 2>&1; then
     return 0
@@ -166,8 +175,8 @@ safe_hyprpaper_reload() {
   fi
 
   pkill -x hyprpaper >/dev/null 2>&1 || true
-  # Close lock fd before spawning background process so it won't inherit the flock.
-  ( exec 200>&-; hyprpaper >/dev/null 2>&1 & )
+  # Detach the wallpaper process and keep runtime state outside the dotfiles tree.
+  ( exec 200>&-; setsid -f hyprpaper --config "$HYPERPAPER_RUNTIME_CONFIG" >/dev/null 2>&1 )
 }
 
 set_gtk_mode() {
@@ -216,14 +225,12 @@ set_vicinae_mode_map() {
     "$VICINAE_SETTINGS"
 }
 
-set_hypr_theme_colors() {
+set_rofi_mode() {
   local mode="$1"
+  local source="$ROFI_THEME_SRC_DIR/colors-$mode.rasi"
 
-  if [[ "$mode" == "dark" ]]; then
-    cp "$COLOR_CONF_DARK" "$COLOR_CONF_ACTIVE"
-  else
-    cp "$COLOR_CONF_LIGHT" "$COLOR_CONF_ACTIVE"
-  fi
+  [[ -f "$source" ]] || return 0
+  cp "$source" "$ROFI_THEME_ACTIVE"
 }
 
 set_yazi_mode() {
@@ -254,9 +261,7 @@ set_hyprpaper_mode() {
 
   [[ -f "$wallpaper" ]] || return 0
 
-  if [[ ! -f "$HYPERPAPER_CONFIG" ]]; then
-    mkdir -p "$(dirname "$HYPERPAPER_CONFIG")"
-    cat > "$HYPERPAPER_CONFIG" <<EOF
+  cat > "$HYPERPAPER_RUNTIME_CONFIG" <<EOF
 splash = false
 
 wallpaper {
@@ -265,9 +270,6 @@ wallpaper {
     fit_mode = cover
 }
 EOF
-  else
-    sed -E -i "s|^([[:space:]]*path[[:space:]]*=[[:space:]]*).*$|\\1$wallpaper|" "$HYPERPAPER_CONFIG"
-  fi
 
   safe_hyprpaper_reload
 }
@@ -359,17 +361,20 @@ apply_mode() {
   sync_file_if_needed "$VICINAE_THEME_SRC_DIR/$VICINAE_LIGHT_THEME.toml" "$VICINAE_THEME_DIR/$VICINAE_LIGHT_THEME.toml"
   sync_file_if_needed "$VICINAE_THEME_SRC_DIR/$VICINAE_DARK_THEME.toml" "$VICINAE_THEME_DIR/$VICINAE_DARK_THEME.toml"
 
+  # State is Hyprland's runtime palette source. Persist it before reloading so
+  # the Lua config sees the mode being applied, not the previous one.
+  write_state "$(state_mode)" "$desired_mode" "$source"
+
   set_gtk_mode "$desired_mode"
   set_ghostty_mode "$desired_mode"
   set_btop_mode "$desired_mode"
   set_vicinae_mode_map
-  set_hypr_theme_colors "$desired_mode"
+  set_rofi_mode "$desired_mode"
+  set_mako_mode "$desired_mode"
   set_yazi_mode "$desired_mode"
   set_hyprpaper_mode "$desired_mode"
   safe_hyprctl_reload
   safe_vicinae_reload
-
-  write_state "$(state_mode)" "$desired_mode" "$source"
 
   notify "Theme mode" "Applied ${desired_mode} mode (${source})"
 }
@@ -395,6 +400,7 @@ set_mode() {
 }
 
 sync_mode() {
+  local force="${1:-0}"
   local desired applied target source
   desired="$(state_mode)"
   applied="$(state_applied)"
@@ -408,7 +414,7 @@ sync_mode() {
     source="manual"
   fi
 
-  if [[ "$applied" != "$target" ]]; then
+  if [[ "$force" == "1" || "$applied" != "$target" ]]; then
     write_state "$desired" "$applied" "$source"
     apply_mode "$target" "$source"
   fi
@@ -562,11 +568,11 @@ main() {
       cycle_mode
       ;;
     sync)
-      sync_mode
+      sync_mode 1
       ;;
     status)
       if [[ "$sync_auto" == "1" && "$(state_mode)" == "auto" ]]; then
-        sync_mode
+        sync_mode 0
       fi
 
       if [[ "$want_json" == "1" ]]; then

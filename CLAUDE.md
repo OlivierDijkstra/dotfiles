@@ -31,6 +31,11 @@ Hyprland configuration with modular structure (Lua — Hyprland loads `hyprland.
 - `hyprland.lua` - Main config, `require()`s all other files
 - `config/` - Split configs (`.lua`): animations, autostart, decorations, environment, input, keybinds, monitor, variables, vars, windowrules
 
+### .config/theme/
+Cross-application light/dark palette:
+- `palette.json` - Single source of truth for the eight surface levels and semantic colors
+- `scripts/generate-theme` - Regenerates Hyprland, Quickshell, Ghostty, btop, Vicinae, Yazi, Mako, Rofi, and CSS theme artifacts
+
 ### .config/nvim/
 Neovim configuration using lazy.nvim:
 - `init.lua` - Bootstrap and plugin setup

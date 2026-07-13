@@ -19,7 +19,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     focusable: false
 
-    readonly property int topMargin: 8
+    readonly property int topMargin: 0
 
     Widgets.MediaState {
         id: mediaState

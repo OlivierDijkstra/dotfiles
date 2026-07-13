@@ -5,7 +5,8 @@ Item {
     id: root
 
     property string layoutKey: "pill"
-    property int surfaceHeight: 36
+    property int verticalPadding: 7
+    property int surfaceHeight: Math.ceil(contentRow.implicitHeight + (verticalPadding * 2))
     property int surfaceRadius: Math.round(surfaceHeight / 2)
     property int horizontalPadding: 16
     property int contentSpacing: 8
@@ -29,7 +30,7 @@ Item {
         id: contentRow
 
         x: Math.round((parent.width - width) / 2)
-        y: Math.round((parent.height - height) / 2)
+        y: root.verticalPadding
         spacing: root.contentSpacing
 
         WorkspaceIndicator {

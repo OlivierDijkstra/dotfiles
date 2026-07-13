@@ -37,6 +37,9 @@
    "providers": {
       "applications": {
          "entrypoints": {
+            "codex-desktop": {
+               "alias": "Codex"
+            },
             "protontricks": {
                "enabled": false
             }

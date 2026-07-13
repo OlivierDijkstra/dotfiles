@@ -91,7 +91,9 @@ Item {
         IslandWidgetHost {
             id: widgetHost
 
-            anchors.fill: surface
+            x: surface.shoulderRadius
+            width: surface.contentWidth
+            height: surface.height
 
             widgets: root.widgets
             layoutKey: root.widgetLayoutKey

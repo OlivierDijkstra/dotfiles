@@ -27,6 +27,8 @@ Item {
 
     Shape {
         anchors.fill: parent
+        antialiasing: true
+        preferredRendererType: Shape.CurveRenderer
 
         ShapePath {
             id: surfacePath

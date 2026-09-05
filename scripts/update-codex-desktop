@@ -6,7 +6,6 @@ readonly repo_url="https://github.com/ilysenko/codex-desktop-linux.git"
 readonly repo_branch="main"
 readonly checkout_dir="${XDG_CACHE_HOME:-$HOME/.cache}/codex-desktop-linux/source"
 readonly package_cache="${XDG_CACHE_HOME:-$HOME/.cache}/codex-desktop/packages"
-readonly updater_cache="${XDG_CACHE_HOME:-$HOME/.cache}/codex-update-manager/downloads"
 readonly build_info="/opt/codex-desktop/resources/codex-linux-build-info.json"
 readonly feature_config="/home/oli/dotfiles/.config/codex-desktop-linux/features.json"
 readonly app_pid_file="${XDG_STATE_HOME:-$HOME/.local/state}/codex-desktop/app.pid"
@@ -51,16 +50,6 @@ cached_package_for_commit() {
   return 1
 }
 
-latest_cached_dmg() {
-  local dmg=""
-
-  [[ -d "$updater_cache" ]] || return 1
-  dmg="$(find "$updater_cache" -maxdepth 1 -type f -name '*.dmg' -printf '%T@ %p\n' |
-    sort -nr | head -n 1 | cut -d' ' -f2-)"
-  [[ -n "$dmg" ]] || return 1
-  printf '%s\n' "$dmg"
-}
-
 if [[ "$installed_commit" != "$remote_commit" ]]; then
   if app_is_running; then
     printf '%s\n' "Codex Desktop has a Linux wrapper update. Close it and rerun 'up' to install it."
@@ -81,20 +70,10 @@ if [[ "$installed_commit" != "$remote_commit" ]]; then
       git clone --branch "$repo_branch" --single-branch "$repo_url" "$checkout_dir"
     fi
 
-    build_args=(install-native)
-    if dmg="$(latest_cached_dmg)"; then
-      build_args+=("DMG=$dmg")
-    fi
-
     printf '%s\n' "Building the updated Codex Desktop Linux wrapper."
     CODEX_LINUX_ENABLE_COMPUTER_USE_UI=1 \
       CODEX_LINUX_FEATURES_CONFIG="$feature_config" \
       MAX_BUILD_THREADS="$(nproc)" \
-      make -C "$checkout_dir" "${build_args[@]}"
+      make -C "$checkout_dir" install-native
   fi
-fi
-
-if command -v codex-update-manager >/dev/null 2>&1; then
-  codex-update-manager check-now
-  codex-update-manager install-ready
 fi

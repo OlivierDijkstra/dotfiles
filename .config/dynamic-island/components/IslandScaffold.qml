@@ -1,5 +1,4 @@
 import QtQuick
-import "Motion.js" as Motion
 
 Item {
     id: root
@@ -10,6 +9,8 @@ Item {
     property var displayedLayout: null
     property var pendingLayout: null
     property string widgetLayoutKey: ""
+    property string transitionPhase: "idle"
+    property bool initialized: false
     readonly property alias surfaceItem: surface
 
     implicitWidth: surface.width
@@ -31,22 +32,41 @@ Item {
             return
         }
 
-        if (!layoutMorphTimer.running && pendingLayout.layoutKey === displayedLayout.layoutKey) {
-            if (widgetLayoutKey !== displayedLayout.layoutKey) {
-                widgetLayoutKey = displayedLayout.layoutKey
+        if (transitionPhase === "hiding") {
+            if (pendingLayout === displayedLayout) {
+                transitionPhase = "idle"
                 widgetHost.revealCurrent()
             }
             return
         }
 
-        if (layoutMorphTimer.running) {
+        if (transitionPhase === "morphing") {
+            displayedLayout = pendingLayout
             return
         }
 
+        if (pendingLayout === displayedLayout) {
+            return
+        }
+
+        transitionPhase = "hiding"
         widgetHost.hideCurrent()
     }
 
-    Component.onCompleted: requestLayoutTransition()
+    function finishLayoutTransition() {
+        if (transitionPhase !== "morphing" || surface.morphRunning) {
+            return
+        }
+
+        widgetLayoutKey = displayedLayout.layoutKey
+        transitionPhase = "idle"
+        widgetHost.revealCurrent()
+    }
+
+    Component.onCompleted: {
+        requestLayoutTransition()
+        initialized = true
+    }
 
     onControllerChanged: {
         if (controller) {
@@ -69,6 +89,8 @@ Item {
             y: 0
 
             layout: root.displayedLayout
+            animate: root.initialized
+            onMorphFinished: root.finishLayoutTransition()
         }
 
         HoverHandler {
@@ -98,28 +120,12 @@ Item {
             widgets: root.widgets
             layoutKey: root.widgetLayoutKey
             onHideFinished: {
-                if (!root.pendingLayout) {
+                if (root.transitionPhase !== "hiding" || !root.pendingLayout) {
                     return
                 }
 
+                root.transitionPhase = "morphing"
                 root.displayedLayout = root.pendingLayout
-                layoutMorphTimer.restart()
-            }
-        }
-
-        Timer {
-            id: layoutMorphTimer
-
-            interval: Motion.morphDuration
-            onTriggered: {
-                if (root.pendingLayout && root.pendingLayout.layoutKey !== root.displayedLayout.layoutKey) {
-                    root.displayedLayout = root.pendingLayout
-                    restart()
-                    return
-                }
-
-                root.widgetLayoutKey = root.displayedLayout ? root.displayedLayout.layoutKey : ""
-                widgetHost.revealCurrent()
             }
         }
     }

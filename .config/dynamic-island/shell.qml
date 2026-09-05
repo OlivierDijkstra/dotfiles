@@ -86,7 +86,11 @@ PanelWindow {
     }
 
     implicitWidth: Screen.width
-    implicitHeight: topMargin + islandScaffold.implicitHeight
+    readonly property int maximumWidgetHeight: Math.ceil(widgets.reduce((height, widget) => Math.max(height, widget.surfaceHeight), 0))
+
+    // Keep the Wayland buffer steady during morphs; the input mask below still
+    // follows the visible surface. Resize only when widget requirements change.
+    implicitHeight: Math.ceil(Math.max(islandScaffold.implicitHeight, topMargin + maximumWidgetHeight))
 
     UI.IslandScaffold {
         id: islandScaffold

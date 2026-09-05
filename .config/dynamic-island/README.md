@@ -1,108 +1,55 @@
 # Dynamic Island
 
-Small Quickshell experiment for Arch Linux on Wayland.
+A Quickshell panel for Arch Linux and Hyprland, anchored to the top of the screen.
 
-The goal is to build a simple dynamic island style component that sits at the top of the screen and can expand for lightweight status or interaction UI.
+## Structure
 
-Right now this repo contains a small layout system, a widget system, and the transition coordination between them.
+- `shell.qml`: transparent Wayland panel, shared state objects, and widget registry.
+- `components/IslandStateController.qml`: selects a layout from availability, exclusive priority, and hover state.
+- `components/IslandScaffold.qml`: coordinates content hiding, surface morphing, and content revealing.
+- `components/IslandSurface.qml`: vector surface and animated geometry.
+- `components/IslandWidgetHost.qml`: attaches widgets and handles temporary blur/fade transitions.
+- `components/widgets/`: date/workspace, media, volume, recording, audio routing, network, and Bluetooth components.
+- `components/Motion.js`: shared animation settings.
+- `components/Palette.qml`: generated semantic colors; the island stays black in every desktop mode.
 
-## Current structure
+## Layouts and widgets
 
-- `shell.qml`: top-level `PanelWindow`, layout registry, widget registry, and debug toggle wiring.
-- `components/IslandLayout.qml`: layout descriptor type.
-- `components/IslandStateController.qml`: chooses the requested layout from hover state or debug selection.
-- `components/IslandScaffold.qml`: transition coordinator between requested layout, displayed layout, and widget visibility.
-- `components/IslandSurface.qml`: the black island surface that morphs between layout sizes.
-- `components/IslandWidgetHost.qml`: renders widgets and handles widget blur/fade transitions.
-- `components/widgets/`: concrete widget implementations.
-- `components/Motion.js`: shared motion constants.
-- `components/Palette.qml`: generated dark surface palette; the island stays pure black in every desktop mode.
+Widgets are declared in `shell.qml` and carry their own layout metadata:
 
-## Layouts
+- `layoutKey`
+- `surfaceWidth`, `surfaceHeight`, and `surfaceRadius`
+- `available`, and optionally `exclusive`
 
-Layouts are declared in `shell.qml` as `IslandLayout` objects. Each layout defines:
+The controller gives the first available exclusive widget priority. Otherwise it selects the first available ordinary widget at rest, or the last on hover: the date/workspace pill and the expanded media controls respectively.
 
-- `key`
-- `label`
-- `width`
-- `height`
-- optional `radius`
-- optional `hint`
+The host reparents widgets into a shared content item. Only the selected, available widget is visible. Hidden widgets retain their preferred dimensions, avoiding layout recalculation throughout unrelated surface animations.
 
-At the moment the debug menu exposes four layouts:
+## Rendering and transitions
 
-- `pill`: default resting state
-- `box`: large expanded window
-- `elongated-pill`: wide lightweight state
-- `small-box`: compact stacked state
+The surface animates content width, height, and bottom radius with `220ms` `Easing.InOutCubic` Behaviors. Total width is derived from the animated content width and shoulders, so the content and surface stay aligned. Initial geometry is applied immediately, and later geometry changes can reverse from their current values without overshooting.
 
-The state controller decides which layout is requested. In auto mode, hover moves from the collapsed layout to the hover layout. In debug mode, the selected layout overrides that behavior.
+When the selected widget changes:
 
-## Widgets
+1. Fade and blur the outgoing content over `120ms`.
+2. After hiding finishes, morph the surface to the latest requested layout.
+3. Once all geometry animations stop, switch the widget and reveal it over `120ms`.
 
-Widgets are declared separately from layouts through `IslandWidgetSpec` entries in `shell.qml`.
+Animation completion drives these handoffs. Returning to the current widget while it is hiding cancels the exit. Requests during a morph retarget the geometry immediately. Equal-size layouts still hand off content even when no geometry animation starts.
 
-Each widget spec currently defines:
+Blur uses a single temporary item layer with `MultiEffect`, with a normalized blur amount of `0–1` and `blurMax = 16`. The layer is enabled only during visible transitions; settled and fully hidden content use no host blur layer. Fully hidden content is also marked invisible, and controls are disabled until the reveal completes. This follows [Qt's MultiEffect guidance](https://doc.qt.io/qt-6/qml-qtquick-effects-multieffect.html#performance).
 
-- `key`
-- `component`
-- `visibleLayouts`
-- `preferredWidth`
-- `preferredHeight`
-
-`visibleLayouts` determines which layouts a widget is allowed to render in. Widgets can also expose runtime availability so layouts do not try to reveal content that is currently empty.
-
-Current widgets:
-
-- `DateTimeWidget`, visible in `pill`
-- `MediaWidget`, visible in `box` while an MPRIS player is actively playing
-
-`IslandWidgetHost` renders the active widgets through `Loader` instances, centered in the island. This is intentionally simple for now and is a base for future placement rules or slots once multiple widgets need to coexist.
-
-## Animation flow
-
-The island shape and the widget content are coordinated as separate steps.
-
-### Layout morph
-
-The island surface morph uses a shared `IslandMorphAnimation`:
-
-- duration: `220ms`
-- easing: `Easing.OutBack`
-- overshoot: `1`
-
-This same morph animation is applied to `width`, `height`, and `radius`, so the geometry starts and finishes together.
-
-### Widget transition sequence
-
-When a new layout is requested, the transition order is:
-
-1. Fade and blur out the currently visible widget.
-2. After the widget hide transition completes, start the island layout morph.
-3. Wait for the morph to finish.
-4. Switch the widget layout key to the new layout.
-5. Blur and fade the new widget back in.
-
-This sequencing is owned by `IslandScaffold.qml`, while `IslandWidgetHost.qml` only performs the actual hide/reveal effect.
-
-### Widget blur/fade
-
-Widget transitions currently use values from `components/Motion.js`:
-
-- `widgetTransitionDuration = 120`
-- `widgetBlur = 1.6`
-- `widgetBlurMax = 32`
-
-The host renders widget content into a `ShaderEffectSource` and applies `MultiEffect` on top of it, so the blur is visible during hide and reveal instead of the widget simply disappearing.
+The panel reserves enough backing-buffer height for its largest widget, while its input mask follows the visible island. Ordinary layout transitions therefore avoid resizing the Wayland buffer every frame. Widget size changes can still adjust the capacity; an in-flight surface is kept inside it.
 
 ## Styling
 
-- Surface and semantic colors are generated from `.config/theme/palette.json`.
-- The current date/time widget uses `Geist` explicitly.
-- The date/time text is currently `14px` and `Font.DemiBold`.
+- Semantic colors are generated from `.config/theme/palette.json`.
+- The date/time widget uses `Geist`, at `14px` and `Font.DemiBold`.
 
 ## Development
 
-- Run normally with `make run`
-- Run with debug layout picker using `make run-debug`
-- Lint all QML files with `make lint`
+- `make run`: run the shell.
+- `make lint`: lint all QML with the local Qt installation.
+- `make test`: run transition and rendered-pixel regression tests in an offscreen OpenGL scene, without starting shell services.
+
+Tests cover transition ordering, rapid requests, reversal during each phase, equal-size layouts, dynamic dimensions, hidden-panel sizing, and blur-layer handoff. They require Qt Quick Test and an OpenGL-capable Qt rendering backend.

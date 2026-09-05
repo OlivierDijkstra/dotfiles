@@ -6,23 +6,48 @@ Item {
     id: root
 
     property var layout: null
+    property bool animate: true
     property real cornerRadius: layout ? layout.surfaceRadius : height / 2
     readonly property real shoulderRadius: Math.min(12, height / 3, cornerRadius)
-    readonly property real contentWidth: layout ? layout.surfaceWidth : 0
+    property real contentWidth: layout ? layout.surfaceWidth : 0
+    readonly property bool morphRunning: widthAnimation.running || heightAnimation.running || radiusAnimation.running
+    signal morphFinished
+
+    // Defer until all geometry bindings and Behaviors have reacted, including
+    // layout changes whose dimensions are identical (and start no animation).
+    function reportSettled() {
+        if (!morphRunning) {
+            morphFinished()
+        }
+    }
+
+    onLayoutChanged: Qt.callLater(reportSettled)
 
     width: contentWidth + (shoulderRadius * 2)
     height: layout ? layout.surfaceHeight : 0
 
-    Behavior on width {
-        animation: IslandMorphAnimation {}
+    Behavior on contentWidth {
+        enabled: root.animate
+        IslandMorphAnimation {
+            id: widthAnimation
+            onRunningChanged: Qt.callLater(root.reportSettled)
+        }
     }
 
     Behavior on height {
-        animation: IslandMorphAnimation {}
+        enabled: root.animate
+        IslandMorphAnimation {
+            id: heightAnimation
+            onRunningChanged: Qt.callLater(root.reportSettled)
+        }
     }
 
     Behavior on cornerRadius {
-        animation: IslandMorphAnimation {}
+        enabled: root.animate
+        IslandMorphAnimation {
+            id: radiusAnimation
+            onRunningChanged: Qt.callLater(root.reportSettled)
+        }
     }
 
     Shape {

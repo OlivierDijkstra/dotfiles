@@ -9,8 +9,6 @@ Item {
     property var widgets: []
     property string layoutKey: ""
     property real contentOpacity: 0
-    property real contentBlur: 0
-    readonly property bool effectActive: root.contentBlur > 0.001
     signal hideFinished
 
     function widgetVisible(widget, layoutKey) {
@@ -36,11 +34,13 @@ Item {
             }
 
             widget.parent = widgetContent
+            // Inactive widgets retain their own layout instead of relaying
+            // every animation frame through all the hidden panels.
             widget.width = Qt.binding(function() {
-                return widgetContent.width
+                return widget.visible ? widgetContent.width : widget.surfaceWidth
             })
             widget.height = Qt.binding(function() {
-                return widgetContent.height
+                return widget.visible ? widgetContent.height : widget.surfaceHeight
             })
             widget.x = 0
             widget.y = 0
@@ -51,66 +51,45 @@ Item {
     }
 
     function hideCurrent() {
-        revealTimer.stop()
+        if (opacityAnimation.running && opacityAnimation.to === 0) {
+            return
+        }
 
-        if (!hasWidgetsForLayout(layoutKey)) {
+        opacityAnimation.stop()
+
+        if (!hasWidgetsForLayout(layoutKey) || contentOpacity === 0) {
             contentOpacity = 0
-            contentBlur = 0
             hideFinished()
             return
         }
 
-        if (hideTimer.running) {
-            return
-        }
-
-        contentOpacity = 0
-        contentBlur = Motion.widgetBlur
-        hideTimer.restart()
+        opacityAnimation.to = 0
+        opacityAnimation.start()
     }
 
     function revealCurrent() {
-        hideTimer.stop()
+        opacityAnimation.stop()
 
         if (!hasWidgetsForLayout(layoutKey)) {
             contentOpacity = 0
-            contentBlur = 0
             return
         }
 
-        contentOpacity = 0
-        contentBlur = Motion.widgetBlur
-        revealTimer.restart()
+        opacityAnimation.to = 1
+        opacityAnimation.start()
     }
 
-    Behavior on contentOpacity {
-        NumberAnimation {
-            duration: Motion.widgetTransitionDuration
-            easing.type: Easing.OutCubic
-        }
-    }
+    NumberAnimation {
+        id: opacityAnimation
 
-    Behavior on contentBlur {
-        NumberAnimation {
-            duration: Motion.widgetTransitionDuration
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    Timer {
-        id: hideTimer
-
-        interval: Motion.widgetTransitionDuration
-        onTriggered: root.hideFinished()
-    }
-
-    Timer {
-        id: revealTimer
-
-        interval: 0
-        onTriggered: {
-            root.contentOpacity = 1
-            root.contentBlur = 0
+        target: root
+        property: "contentOpacity"
+        duration: Motion.widgetTransitionDuration
+        easing.type: Easing.OutCubic
+        onFinished: {
+            if (to === 0) {
+                root.hideFinished()
+            }
         }
     }
 
@@ -122,37 +101,18 @@ Item {
 
         anchors.fill: parent
         clip: true
-        opacity: root.effectActive ? 1 : root.contentOpacity
-    }
+        visible: root.contentOpacity > 0
+        enabled: root.contentOpacity === 1
+        opacity: root.contentOpacity
 
-    Loader {
-        anchors.fill: widgetContent
-        active: root.effectActive
-
-        sourceComponent: Component {
-            Item {
-                anchors.fill: parent
-
-                ShaderEffectSource {
-                    id: widgetSource
-
-                    anchors.fill: parent
-                    sourceItem: widgetContent
-                    live: true
-                    hideSource: true
-                    visible: false
-                }
-
-                MultiEffect {
-                    anchors.fill: parent
-                    opacity: root.contentOpacity
-                    source: widgetSource
-                    blurEnabled: root.contentBlur > 0
-                    blur: root.contentBlur
-                    blurMax: Motion.widgetBlurMax
-                    autoPaddingEnabled: false
-                }
-            }
+        // A single temporary layer supplies the blur texture. Hidden and
+        // settled content needs neither a texture capture nor a blur pass.
+        layer.enabled: opacityAnimation.running && visible
+        layer.effect: MultiEffect {
+            blurEnabled: true
+            blur: (1 - root.contentOpacity) * Motion.widgetBlur
+            blurMax: Motion.widgetBlurMax
+            autoPaddingEnabled: false
         }
     }
 }

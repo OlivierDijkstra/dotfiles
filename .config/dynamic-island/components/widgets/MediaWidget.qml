@@ -4,6 +4,7 @@ import ".." as Theme
 
 Item {
     id: root
+    property var recordingState: null
 
     property string layoutKey: "box"
     property int surfaceWidth: 380
@@ -445,8 +446,15 @@ Item {
         Item {
             width: parent.width
             height: 40
-            visible: !!root.themeModeState || !!root.networkState || !!root.bluetoothState
+            visible: recordingIndicator.recording || !!root.themeModeState || !!root.networkState || !!root.bluetoothState
             opacity: visible ? 1 : 0
+
+            RecordingIndicator {
+                id: recordingIndicator
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                recordingState: root.recordingState
+            }
 
             Row {
                 anchors.right: parent.right

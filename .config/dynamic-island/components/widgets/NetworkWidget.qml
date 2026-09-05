@@ -4,6 +4,7 @@ import ".." as Theme
 
 Item {
     id: root
+    property var recordingState: null
 
     readonly property string iconBasePath: "../../assets/icons/lucide"
     property string layoutKey: "network-box"
@@ -38,7 +39,13 @@ Item {
 
             Item {
                 width: parent.width - closeButton.width
-                height: 1
+                height: parent.height
+
+                RecordingIndicator {
+                    anchors.left: parent.left
+                    anchors.verticalCenter: parent.verticalCenter
+                    recordingState: root.recordingState
+                }
             }
 
             Item {

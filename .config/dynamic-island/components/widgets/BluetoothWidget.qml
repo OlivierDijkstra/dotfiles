@@ -4,6 +4,7 @@ import ".." as Theme
 
 Item {
     id: root
+    property var recordingState: null
 
     readonly property string iconBasePath: "../../assets/icons/lucide"
     property string layoutKey: "bluetooth-box"
@@ -104,7 +105,13 @@ Item {
 
             Item {
                 width: parent.width - bluetoothToggle.width - closeButton.width - (parent.spacing * 2)
-                height: 1
+                height: parent.height
+
+                RecordingIndicator {
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    recordingState: root.recordingState
+                }
             }
 
             Item {

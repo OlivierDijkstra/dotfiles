@@ -26,7 +26,7 @@ TestCase {
             property alias box: box
             property alias other: other
             property alias recording: recording
-            property alias badge: badge
+            readonly property var indicator: controller.activeLayout === box ? boxIndicator : pillIndicator
 
             QtObject {
                 id: recording
@@ -34,12 +34,6 @@ TestCase {
                 property string elapsedText: "0:12"
                 property int stopCalls: 0
                 function stopRecording() { stopCalls += 1 }
-            }
-
-            Widgets.RecordingBadge {
-                id: badge
-                x: scaffold.x + scaffold.width
-                recordingState: recording
             }
 
             QtObject {
@@ -51,11 +45,19 @@ TestCase {
             Item {
                 id: pill
                 property string layoutKey: "pill"
-                property real surfaceWidth: 200
+                property real surfaceWidth: 200 + (recording.recording ? pillIndicator.width + 8 : 0)
                 property real surfaceHeight: 36
                 property real surfaceRadius: 18
                 property bool available: true
                 Rectangle { anchors.fill: parent; anchors.margins: 10; color: "white" }
+
+                Widgets.RecordingIndicator {
+                    id: pillIndicator
+                    anchors.right: parent.right
+                    anchors.rightMargin: 16
+                    anchors.verticalCenter: parent.verticalCenter
+                    recordingState: recording
+                }
             }
 
             Item {
@@ -66,6 +68,15 @@ TestCase {
                 property real surfaceRadius: 28
                 property bool available: true
                 Rectangle { anchors.fill: parent; anchors.margins: 30; color: "white" }
+
+                Widgets.RecordingIndicator {
+                    id: boxIndicator
+                    anchors.left: parent.left
+                    anchors.leftMargin: 30
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 12
+                    recordingState: recording
+                }
             }
 
             Item {
@@ -83,7 +94,6 @@ TestCase {
                 controller: controller
                 widgets: [pill, box, other]
                 topMargin: 0
-                accessoryHovered: badge.hovered
             }
         }
     }
@@ -114,33 +124,36 @@ TestCase {
         settle(scene.pill)
     }
 
-    function test_recordingBadgeDoesNotReplaceContent() {
+    function test_recordingIndicatorDoesNotReplaceContent() {
         scene.controller.activeLayout = scene.box
         settle(scene.box)
         scene.recording.recording = true
-        tryCompare(scene.badge, "opacity", 1)
+        tryCompare(scene.indicator, "visible", true)
         compare(scene.scaffold.widgetLayoutKey, "box")
         verify(scene.box.visible)
         mouseMove(scene.scaffold, scene.scaffold.width / 2, 18)
         tryCompare(scene.controller, "hovered", true)
-        mouseMove(scene.badge, 2, 18)
+        compare(scene.indicator.parent, scene.box)
+        mouseMove(scene.indicator, 2, 10)
         tryCompare(scene.controller, "hovered", true)
-        mouseClick(scene.badge, scene.badge.width / 2, 18)
+        mouseClick(scene.indicator, scene.indicator.width / 2, 10)
         compare(scene.recording.stopCalls, 1)
         scene.recording.recording = false
-        tryCompare(scene.badge, "visible", false)
+        tryCompare(scene.indicator, "visible", false)
         compare(scene.scaffold.widgetLayoutKey, "box")
         mouseMove(testCase, 0, 399)
     }
 
-    function test_badgeHoverDoesNotMoveCollapsedIsland() {
+    function test_recordingIndicatorFitsInsidePill() {
         mouseMove(testCase, 0, 399)
         scene.recording.recording = true
-        tryCompare(scene.badge, "opacity", 1)
-        mouseMove(scene.badge, scene.badge.width / 2, 18)
-        tryCompare(scene.badge, "hovered", true)
-        wait(0)
-        verify(!scene.controller.hovered)
+        tryCompare(scene.indicator, "visible", true)
+        tryCompare(scene.scaffold.surfaceItem, "contentWidth", scene.pill.surfaceWidth)
+        compare(scene.indicator.parent, scene.pill)
+        verify(scene.indicator.x >= 0)
+        verify(scene.indicator.x + scene.indicator.width <= scene.pill.width)
+        mouseMove(scene.indicator, scene.indicator.width / 2, 10)
+        tryCompare(scene.controller, "hovered", true)
         compare(scene.scaffold.widgetLayoutKey, "pill")
         mouseMove(testCase, 0, 399)
     }

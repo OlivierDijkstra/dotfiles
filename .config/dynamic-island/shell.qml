@@ -58,22 +58,28 @@ PanelWindow {
 
     property list<Item> widgets: [
         Widgets.AudioRouteWidget {
+            recordingState: recordingState
             audioRouteState: audioRouteState
         },
         Widgets.NetworkWidget {
+            recordingState: recordingState
             networkState: networkState
         },
         Widgets.BluetoothWidget {
+            recordingState: recordingState
             bluetoothState: bluetoothState
         },
         Widgets.VolumeOsdWidget {
+            recordingState: recordingState
             volumeState: volumeState
             audioRouteState: audioRouteState
         },
         Widgets.DateTimeWidget {
+            recordingState: recordingState
             mediaState: mediaState
         },
         Widgets.MediaWidget {
+            recordingState: recordingState
             mediaState: mediaState
             volumeState: volumeState
             audioRouteState: audioRouteState
@@ -105,22 +111,9 @@ PanelWindow {
         controller: stateController
         widgets: root.widgets
         topMargin: root.topMargin
-        accessoryHovered: recordingBadge.hovered
-    }
-
-    Widgets.RecordingBadge {
-        id: recordingBadge
-
-        x: islandScaffold.x + islandScaffold.width
-        y: root.topMargin
-        recordingState: recordingState
     }
 
     mask: Region {
         item: islandScaffold.surfaceItem
-
-        Region {
-            item: recordingBadge.visible ? recordingBadge : null
-        }
     }
 }

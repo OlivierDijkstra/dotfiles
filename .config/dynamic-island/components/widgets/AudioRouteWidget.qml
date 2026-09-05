@@ -4,6 +4,7 @@ import ".." as Theme
 
 Item {
     id: root
+    property var recordingState: null
 
     readonly property string iconBasePath: "../../assets/icons/lucide"
     property string layoutKey: "audio-route-box"
@@ -41,6 +42,7 @@ Item {
                 id: titleColumn
 
                 width: parent.width - closeButton.width - parent.spacing
+                    - (recordingIndicator.recording ? recordingIndicator.width + parent.spacing : 0)
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 4
 
@@ -63,6 +65,12 @@ Item {
                     font.weight: Font.Medium
                     elide: Text.ElideRight
                 }
+            }
+
+            RecordingIndicator {
+                id: recordingIndicator
+                anchors.verticalCenter: parent.verticalCenter
+                recordingState: root.recordingState
             }
 
             Item {

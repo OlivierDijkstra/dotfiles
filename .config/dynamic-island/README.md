@@ -25,7 +25,7 @@ The controller gives the first available exclusive widget priority. Otherwise it
 
 The host reparents widgets into a shared content item. Only the selected, available widget is visible. Hidden widgets retain their preferred dimensions, avoiding layout recalculation throughout unrelated surface animations.
 
-Recording is a separate `RecordingBadge` beside the island, with a red indicator and elapsed time. Clicking it stops recording; hovering changes the indicator to a stop square. It stays visible alongside every layout, so recording does not prevent using or recording the island itself. A transparent input bridge keeps an expanded island open when moving into the badge. Entering the badge directly leaves a collapsed island in place.
+Recording appears as an inline `RecordingIndicator`: a red dot and elapsed time beside the clock, or within the control rows of expanded panels. Clicking it stops recording; hovering changes the dot to a stop square. It shares the island's surface and content transitions, so recording never replaces the normal widgets or creates a second floating pill.
 
 ## Audio and recording updates
 
@@ -35,7 +35,7 @@ Recording is a separate `RecordingBadge` beside the island, with a red indicator
 
 `RecordingState` watches the recorder's PID and output-path files with `FileView`, querying status only at startup and on changes. While recording, `pidwait` watches process exit so a crash is detected even if the PID file remains. A local timer updates elapsed time once per second only while recording. This uses `pidwait` from `procps-ng`; no recurring recording-status subprocess runs while idle.
 
-The badge invokes `screenrecord --stop`, which only stops an existing recording. The regular `screenrecord` command retains its start/stop toggle behavior.
+The indicator invokes `screenrecord --stop`, which only stops an existing recording. The regular `screenrecord` command retains its start/stop toggle behavior.
 
 ## Rendering and transitions
 
@@ -64,4 +64,4 @@ The panel reserves enough backing-buffer height for its largest widget, while it
 - `make lint`: lint all QML with the local Qt installation.
 - `make test`: run audio-state, transition, rendered-pixel, and recorder lifecycle regression tests. Each QML suite gets its own offscreen OpenGL scene; the recorder test runs an isolated Quickshell instance with temporary status files and a harmless stand-in process.
 
-Tests cover transition ordering and reversals, dynamic dimensions, blur-layer handoff, badge hover/stop behavior, volume/mute changes, audio-device hotplug, and recorder start/crash/restart events. They require Qt Quick Test, an OpenGL-capable Qt rendering backend, Quickshell, Python 3, and `procps-ng`. They do not change real audio settings or start a screen recording.
+Tests cover transition ordering and reversals, dynamic dimensions, blur-layer handoff, inline recording layout/stop behavior, volume/mute changes, audio-device hotplug, and recorder start/crash/restart events. They require Qt Quick Test, an OpenGL-capable Qt rendering backend, Quickshell, Python 3, and `procps-ng`. They do not change real audio settings or start a screen recording.

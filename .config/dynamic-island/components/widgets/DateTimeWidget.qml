@@ -3,6 +3,7 @@ import ".." as Theme
 
 Item {
     id: root
+    property var recordingState: null
 
     property string layoutKey: "pill"
     property int verticalPadding: 7
@@ -46,6 +47,11 @@ Item {
             font.family: "Geist"
             font.pixelSize: 14
             font.weight: Font.DemiBold
+        }
+
+        RecordingIndicator {
+            anchors.verticalCenter: parent.verticalCenter
+            recordingState: root.recordingState
         }
 
         Item {

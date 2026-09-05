@@ -21,6 +21,11 @@ if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
 fi
 
 # Start new recording
+# A stale stop control must never launch a new region selection.
+if [[ "${1:-}" == "--stop" ]]; then
+    exit 0
+fi
+
 mkdir -p "$RECORDING_DIR"
 OUTPUT_FILE="$RECORDING_DIR/recording-$(date +%Y%m%d-%H%M%S).mp4"
 

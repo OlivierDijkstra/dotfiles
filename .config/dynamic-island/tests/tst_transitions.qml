@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import "../components" as UI
+import "../components/widgets" as Widgets
 
 TestCase {
     id: testCase
@@ -24,6 +25,22 @@ TestCase {
             property alias pill: pill
             property alias box: box
             property alias other: other
+            property alias recording: recording
+            property alias badge: badge
+
+            QtObject {
+                id: recording
+                property bool recording: false
+                property string elapsedText: "0:12"
+                property int stopCalls: 0
+                function stopRecording() { stopCalls += 1 }
+            }
+
+            Widgets.RecordingBadge {
+                id: badge
+                x: scaffold.x + scaffold.width
+                recordingState: recording
+            }
 
             QtObject {
                 id: controller
@@ -66,6 +83,7 @@ TestCase {
                 controller: controller
                 widgets: [pill, box, other]
                 topMargin: 0
+                accessoryHovered: badge.hovered
             }
         }
     }
@@ -94,6 +112,37 @@ TestCase {
     function test_initialGeometry() {
         verify(!scene.scaffold.surfaceItem.morphRunning)
         settle(scene.pill)
+    }
+
+    function test_recordingBadgeDoesNotReplaceContent() {
+        scene.controller.activeLayout = scene.box
+        settle(scene.box)
+        scene.recording.recording = true
+        tryCompare(scene.badge, "opacity", 1)
+        compare(scene.scaffold.widgetLayoutKey, "box")
+        verify(scene.box.visible)
+        mouseMove(scene.scaffold, scene.scaffold.width / 2, 18)
+        tryCompare(scene.controller, "hovered", true)
+        mouseMove(scene.badge, 2, 18)
+        tryCompare(scene.controller, "hovered", true)
+        mouseClick(scene.badge, scene.badge.width / 2, 18)
+        compare(scene.recording.stopCalls, 1)
+        scene.recording.recording = false
+        tryCompare(scene.badge, "visible", false)
+        compare(scene.scaffold.widgetLayoutKey, "box")
+        mouseMove(testCase, 0, 399)
+    }
+
+    function test_badgeHoverDoesNotMoveCollapsedIsland() {
+        mouseMove(testCase, 0, 399)
+        scene.recording.recording = true
+        tryCompare(scene.badge, "opacity", 1)
+        mouseMove(scene.badge, scene.badge.width / 2, 18)
+        tryCompare(scene.badge, "hovered", true)
+        wait(0)
+        verify(!scene.controller.hovered)
+        compare(scene.scaffold.widgetLayoutKey, "pill")
+        mouseMove(testCase, 0, 399)
     }
 
     function test_hideBeforeMorphAndRevealAfter() {

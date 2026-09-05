@@ -1,7 +1,7 @@
 #!/usr/bin/env zsh
 
-PIDFILE="/tmp/screenrecord.pid"
-PATHFILE="/tmp/screenrecord.path"
+PIDFILE="${1:-/tmp/screenrecord.pid}"
+PATHFILE="${2:-/tmp/screenrecord.path}"
 
 if [[ ! -f "$PIDFILE" ]]; then
     print '{"recording": false}'

@@ -8,10 +8,14 @@ Item {
 
     readonly property string statusScript: "/home/oli/dotfiles/scripts/screenrecord-status"
     readonly property string toggleScript: "/home/oli/dotfiles/scripts/screenrecord"
+    property string pidFilePath: "/tmp/screenrecord.pid"
+    property string pathFilePath: "/tmp/screenrecord.path"
 
     property bool recording: false
     property int elapsedSeconds: 0
+    property real startedAt: 0
     property string outputPath: ""
+    property bool refreshPending: false
     readonly property string elapsedText: root.formatElapsed(elapsedSeconds)
 
     function formatElapsed(value) {
@@ -34,6 +38,7 @@ Item {
             recording: false,
             elapsedSeconds: 0,
             outputPath: "",
+            pid: 0,
         };
 
         try {
@@ -44,6 +49,7 @@ Item {
                     recording: true,
                     elapsedSeconds: Number(parsed.elapsedSeconds) || 0,
                     outputPath: parsed.outputPath || "",
+                    pid: Number(parsed.pid) || 0,
                 };
             }
         } catch (error) {
@@ -53,11 +59,19 @@ Item {
         root.recording = nextStatus.recording;
         root.elapsedSeconds = nextStatus.elapsedSeconds;
         root.outputPath = nextStatus.outputPath;
+        root.startedAt = Date.now() - nextStatus.elapsedSeconds * 1000;
+
+        if (nextStatus.recording && nextStatus.pid > 0 && !exitWatcher.running) {
+            exitWatcher.exec(["pidwait", "-p", `${nextStatus.pid}`]);
+        }
     }
 
     function refresh() {
         if (!statusProcess.running) {
+            refreshPending = false;
             statusProcess.running = true;
+        } else {
+            refreshPending = true;
         }
     }
 
@@ -67,7 +81,6 @@ Item {
         }
 
         toggleProcess.running = true;
-        postToggleRefresh.restart();
     }
 
     Component.onCompleted: refresh()
@@ -75,7 +88,12 @@ Item {
     Process {
         id: statusProcess
 
-        command: [root.statusScript]
+        command: [root.statusScript, root.pidFilePath, root.pathFilePath]
+        onRunningChanged: {
+            if (!running && root.refreshPending) {
+                Qt.callLater(root.refresh);
+            }
+        }
 
         stdout: StdioCollector {
             onStreamFinished: root.applyStatus(this.text)
@@ -85,25 +103,44 @@ Item {
     Process {
         id: toggleProcess
 
-        command: [root.toggleScript]
+        command: [root.toggleScript, "--stop"]
         onRunningChanged: {
             if (!running) {
-                root.refresh();
+                Qt.callLater(root.refresh);
+            }
+        }
+    }
+
+    // FileView watches creation, replacement, and removal as well as writes.
+    FileView {
+        path: root.pidFilePath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: Qt.callLater(root.refresh)
+    }
+
+    FileView {
+        path: root.pathFilePath
+        watchChanges: true
+        printErrors: false
+        onFileChanged: Qt.callLater(root.refresh)
+    }
+
+    // pidwait sleeps on the kernel's process-exit event, catching crashes even
+    // when the recorder leaves a stale PID file. It only runs while recording.
+    Process {
+        id: exitWatcher
+        onRunningChanged: {
+            if (!running) {
+                Qt.callLater(root.refresh);
             }
         }
     }
 
     Timer {
         interval: 1000
-        running: true
+        running: root.recording
         repeat: true
-        onTriggered: root.refresh()
-    }
-
-    Timer {
-        id: postToggleRefresh
-
-        interval: 250
-        onTriggered: root.refresh()
+        onTriggered: root.elapsedSeconds = Math.max(0, Math.floor((Date.now() - root.startedAt) / 1000))
     }
 }

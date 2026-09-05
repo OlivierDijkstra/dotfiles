@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Services.Pipewire
 import "components" as UI
 import "components/widgets" as Widgets
 
@@ -27,10 +28,16 @@ PanelWindow {
 
     Widgets.VolumeState {
         id: volumeState
+        sink: Pipewire.defaultAudioSink
+    }
+
+    PwObjectTracker {
+        objects: [Pipewire.defaultAudioSink]
     }
 
     Widgets.AudioRouteState {
         id: audioRouteState
+        pipewire: Pipewire
     }
 
     Widgets.NetworkState {
@@ -50,9 +57,6 @@ PanelWindow {
     }
 
     property list<Item> widgets: [
-        Widgets.RecordingWidget {
-            recordingState: recordingState
-        },
         Widgets.AudioRouteWidget {
             audioRouteState: audioRouteState
         },
@@ -101,9 +105,22 @@ PanelWindow {
         controller: stateController
         widgets: root.widgets
         topMargin: root.topMargin
+        accessoryHovered: recordingBadge.hovered
+    }
+
+    Widgets.RecordingBadge {
+        id: recordingBadge
+
+        x: islandScaffold.x + islandScaffold.width
+        y: root.topMargin
+        recordingState: recordingState
     }
 
     mask: Region {
         item: islandScaffold.surfaceItem
+
+        Region {
+            item: recordingBadge.visible ? recordingBadge : null
+        }
     }
 }

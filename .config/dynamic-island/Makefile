@@ -15,4 +15,7 @@ lint:
 	cd "$(CONFIG_PATH)" && $(QMLLINT) --uncreatable-type disable $$(rg --files -g '*.qml')
 
 test:
-	QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=rhi QSG_RHI_BACKEND=opengl $(QMLTESTRUNNER) -input "$(CONFIG_PATH)/tests"
+	@for suite in "$(CONFIG_PATH)"/tests/tst_*.qml; do \
+		QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=rhi QSG_RHI_BACKEND=opengl $(QMLTESTRUNNER) -input "$$suite" || exit $$?; \
+	done
+	python3 "$(CONFIG_PATH)/tests/test_recording.py"

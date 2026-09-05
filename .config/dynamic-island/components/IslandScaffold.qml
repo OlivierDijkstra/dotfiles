@@ -11,10 +11,22 @@ Item {
     property string widgetLayoutKey: ""
     property string transitionPhase: "idle"
     property bool initialized: false
+    property bool accessoryHovered: false
     readonly property alias surfaceItem: surface
 
     implicitWidth: surface.width
     implicitHeight: topMargin + surface.height
+
+    function updateHover() {
+        if (controller) {
+            // Hovering a moving accessory may retain an open island, but must
+            // not expand a collapsed island and move the badge out from under
+            // the pointer. Coalescing hover signals also bridges adjacent items.
+            controller.hovered = hoverHandler.hovered || (accessoryHovered && controller.hovered)
+        }
+    }
+
+    onAccessoryHoveredChanged: Qt.callLater(updateHover)
 
     function requestLayoutTransition() {
         const nextLayout = controller ? controller.activeLayout : null
@@ -69,10 +81,7 @@ Item {
     }
 
     onControllerChanged: {
-        if (controller) {
-            controller.hovered = hoverHandler.hovered
-        }
-
+        updateHover()
         requestLayoutTransition()
     }
 
@@ -97,17 +106,8 @@ Item {
             id: hoverHandler
 
             target: null
-            onHoveredChanged: {
-                if (root.controller) {
-                    root.controller.hovered = hovered
-                }
-            }
-
-            Component.onCompleted: {
-                if (root.controller) {
-                    root.controller.hovered = hovered
-                }
-            }
+            onHoveredChanged: Qt.callLater(root.updateHover)
+            Component.onCompleted: root.updateHover()
         }
 
         IslandWidgetHost {

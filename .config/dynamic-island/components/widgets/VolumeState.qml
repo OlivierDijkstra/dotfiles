@@ -1,16 +1,13 @@
 import QtQuick
-import Quickshell.Io
 
 Item {
     id: root
 
-    visible: false
-    width: 0
-    height: 0
-
-    property bool hasVolumeControl: true
-    property real volumeLevel: 0
-    property bool volumeMuted: false
+    required property var sink
+    readonly property var audio: sink && sink.ready ? sink.audio : null
+    readonly property bool hasVolumeControl: !!audio
+    readonly property real volumeLevel: audio ? clampUnitValue(audio.volume) : 0
+    readonly property bool volumeMuted: audio ? audio.muted : false
     readonly property real volumeVisual: volumeMuted ? 0 : volumeLevel
     property bool osdActive: false
     property bool osdHovered: false
@@ -20,72 +17,36 @@ Item {
     property bool lastObservedMuted: false
     property real suppressOsdUntil: 0
 
-    function clampUnitValue(value) {
-        if (!isFinite(value)) {
-            return 0;
-        }
+    visible: false
 
-        return Math.max(0, Math.min(1, value));
+    function clampUnitValue(value) {
+        return isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
     }
 
-    function rememberObservedState(level, muted) {
-        lastObservedVolumeLevel = level;
-        lastObservedMuted = muted;
+    function rememberObservedState() {
+        lastObservedVolumeLevel = volumeLevel;
+        lastObservedMuted = volumeMuted;
         initialized = true;
     }
 
-    function nowMs() {
-        return Date.now();
-    }
-
-    function maybeShowOsd(level, muted) {
-        if (!initialized) {
-            rememberObservedState(level, muted);
+    function observeVolume() {
+        if (!hasVolumeControl) {
+            initialized = false;
+            osdActive = false;
+            osdHovered = false;
+            osdTimer.stop();
             return;
         }
 
-        const levelChanged = Math.abs(level - lastObservedVolumeLevel) > 0.009;
-        const mutedChanged = muted !== lastObservedMuted;
+        const changed = Math.abs(volumeLevel - lastObservedVolumeLevel) > 0.009
+            || volumeMuted !== lastObservedMuted;
 
-        if (nowMs() < suppressOsdUntil) {
-            rememberObservedState(level, muted);
-            return;
-        }
-
-        if (levelChanged || mutedChanged) {
+        if (initialized && changed && Date.now() >= suppressOsdUntil) {
             osdActive = true;
             osdTimer.restart();
         }
 
-        rememberObservedState(level, muted);
-    }
-
-    function parseVolumeOutput(output) {
-        const match = output.match(/Volume:\s+([0-9.]+)/);
-
-        if (!match) {
-            hasVolumeControl = false;
-            return;
-        }
-
-        const parsedVolume = Number.parseFloat(match[1]);
-
-        if (!isFinite(parsedVolume)) {
-            hasVolumeControl = false;
-            return;
-        }
-
-        const nextLevel = clampUnitValue(parsedVolume);
-        const nextMuted = /\[MUTED\]/i.test(output);
-
-        hasVolumeControl = true;
-        volumeLevel = nextLevel;
-        volumeMuted = nextMuted;
-        maybeShowOsd(nextLevel, nextMuted);
-    }
-
-    function refreshVolume() {
-        volumeQueryProcess.exec(["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"]);
+        rememberObservedState();
     }
 
     function setVolumeLevel(nextVolume) {
@@ -93,69 +54,40 @@ Item {
             return;
         }
 
-        const clampedVolume = clampUnitValue(nextVolume);
-        const roundedVolume = Number(clampedVolume.toFixed(2));
-        volumeLevel = roundedVolume;
-        volumeMuted = false;
-        suppressOsdUntil = nowMs() + 1200;
-        rememberObservedState(roundedVolume, false);
-        volumeSetProcess.exec(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", roundedVolume.toFixed(2)]);
-        volumeRefreshTimer.restart();
+        suppressOsdUntil = Date.now() + 1200;
+        audio.volume = Math.round(clampUnitValue(nextVolume) * 100) / 100;
+        audio.muted = false;
     }
 
     function toggleMute() {
-        if (!hasVolumeControl) {
-            return;
+        if (hasVolumeControl) {
+            suppressOsdUntil = Date.now() + 1200;
+            audio.muted = !audio.muted;
         }
-
-        const nextMuted = !volumeMuted;
-        volumeMuted = nextMuted;
-        suppressOsdUntil = nowMs() + 1200;
-        rememberObservedState(volumeLevel, nextMuted);
-        volumeMuteProcess.exec(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"]);
-        volumeRefreshTimer.restart();
     }
 
-    Component.onCompleted: refreshVolume()
-
-    Timer {
-        id: volumePollTimer
-
-        interval: 250
-        repeat: true
-        running: true
-        onTriggered: root.refreshVolume()
+    // Coalesce channel/mute updates and wait for a newly bound sink to be ready.
+    // Initial sync and device switches should never produce a volume popup.
+    onSinkChanged: {
+        initialized = false;
+        suppressOsdUntil = 0;
+        osdActive = false;
+        osdHovered = false;
+        osdTimer.stop();
+        Qt.callLater(observeVolume);
     }
-
-    Timer {
-        id: volumeRefreshTimer
-
-        interval: 120
-        repeat: false
-        onTriggered: root.refreshVolume()
+    onAudioChanged: {
+        initialized = false;
+        Qt.callLater(observeVolume);
     }
+    onVolumeLevelChanged: Qt.callLater(observeVolume)
+    onVolumeMutedChanged: Qt.callLater(observeVolume)
+    Component.onCompleted: Qt.callLater(observeVolume)
 
     Timer {
         id: osdTimer
 
         interval: 1600
-        repeat: false
         onTriggered: root.osdActive = false
-    }
-
-    Process {
-        id: volumeQueryProcess
-
-        stdout: StdioCollector {
-            onStreamFinished: root.parseVolumeOutput(this.text)
-        }
-    }
-
-    Process {
-        id: volumeSetProcess
-    }
-
-    Process {
-        id: volumeMuteProcess
     }
 }

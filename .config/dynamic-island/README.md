@@ -25,6 +25,18 @@ The controller gives the first available exclusive widget priority. Otherwise it
 
 The host reparents widgets into a shared content item. Only the selected, available widget is visible. Hidden widgets retain their preferred dimensions, avoiding layout recalculation throughout unrelated surface animations.
 
+Recording is a separate `RecordingBadge` beside the island, with a red indicator and elapsed time. Clicking it stops recording; hovering changes the indicator to a stop square. It stays visible alongside every layout, so recording does not prevent using or recording the island itself. A transparent input bridge keeps an expanded island open when moving into the badge. Entering the badge directly leaves a collapsed island in place.
+
+## Audio and recording updates
+
+`VolumeState` observes the default PipeWire sink, bound by `PwObjectTracker` in `shell.qml`. Volume and mute changes arrive as property updates, and slider/mute actions write directly to the audio node. External changes still show the volume OSD; initial synchronization, device switches, and local slider edits do not. Moving the slider also unmutes the sink.
+
+`AudioRouteState` derives its device lists and default indicators from PipeWire's node model. Selecting a device sets PipeWire's preferred default source or sink. Audio controls no longer launch or poll `wpctl`. See [Quickshell's PipeWire types](https://quickshell.org/docs/v0.3.1/types/Quickshell.Services.Pipewire/Pipewire/).
+
+`RecordingState` watches the recorder's PID and output-path files with `FileView`, querying status only at startup and on changes. While recording, `pidwait` watches process exit so a crash is detected even if the PID file remains. A local timer updates elapsed time once per second only while recording. This uses `pidwait` from `procps-ng`; no recurring recording-status subprocess runs while idle.
+
+The badge invokes `screenrecord --stop`, which only stops an existing recording. The regular `screenrecord` command retains its start/stop toggle behavior.
+
 ## Rendering and transitions
 
 The surface animates content width, height, and bottom radius with `220ms` `Easing.InOutCubic` Behaviors. Total width is derived from the animated content width and shoulders, so the content and surface stay aligned. Initial geometry is applied immediately, and later geometry changes can reverse from their current values without overshooting.
@@ -50,6 +62,6 @@ The panel reserves enough backing-buffer height for its largest widget, while it
 
 - `make run`: run the shell.
 - `make lint`: lint all QML with the local Qt installation.
-- `make test`: run transition and rendered-pixel regression tests in an offscreen OpenGL scene, without starting shell services.
+- `make test`: run audio-state, transition, rendered-pixel, and recorder lifecycle regression tests. Each QML suite gets its own offscreen OpenGL scene; the recorder test runs an isolated Quickshell instance with temporary status files and a harmless stand-in process.
 
-Tests cover transition ordering, rapid requests, reversal during each phase, equal-size layouts, dynamic dimensions, hidden-panel sizing, and blur-layer handoff. They require Qt Quick Test and an OpenGL-capable Qt rendering backend.
+Tests cover transition ordering and reversals, dynamic dimensions, blur-layer handoff, badge hover/stop behavior, volume/mute changes, audio-device hotplug, and recorder start/crash/restart events. They require Qt Quick Test, an OpenGL-capable Qt rendering backend, Quickshell, Python 3, and `procps-ng`. They do not change real audio settings or start a screen recording.

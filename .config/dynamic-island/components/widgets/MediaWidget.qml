@@ -7,11 +7,11 @@ Item {
     property var recordingState: null
 
     property string layoutKey: "box"
-    property int surfaceWidth: 380
-    property int surfaceHeight: Math.max(190, Math.ceil(contentColumn.implicitHeight + (contentPaddingVertical * 2)))
-    property int surfaceRadius: 28
-    property int contentPaddingHorizontal: 28
-    property int contentPaddingVertical: 18
+    property int surfaceWidth: 384
+    property int surfaceHeight: Math.max(190, Math.ceil(contentColumn.implicitHeight + (contentPadding * 2)))
+    // Footer tiles use radius 14, so 14 + padding keeps the bottom corners concentric.
+    property int surfaceRadius: 34
+    property int contentPadding: 20
     required property var mediaState
     required property var volumeState
     property var audioRouteState: null
@@ -26,16 +26,20 @@ Item {
     readonly property bool isPlaying: hasPlayer && player.isPlaying
     readonly property bool hasArtwork: !!player && !!player.trackArtUrl
     readonly property real trackLength: player && player.length > 0 ? player.length : 0
-    readonly property real progress: trackLength > 0 ? Math.max(0, Math.min(1, displayPosition / trackLength)) : 0
+    readonly property bool canSeek: hasPlayer && player.canSeek && player.positionSupported && trackLength > 0
+    // While scrubbing, preview the target position without seeking until release.
+    readonly property real shownPosition: scrubPosition >= 0 ? scrubPosition : displayPosition
+    readonly property real progress: trackLength > 0 ? Math.max(0, Math.min(1, shownPosition / trackLength)) : 0
     readonly property string title: player && player.trackTitle ? player.trackTitle : (player && player.identity ? player.identity : "Media")
     readonly property string artist: player && player.trackArtist ? player.trackArtist : statusText
     readonly property string statusText: !hasPlayer ? "Nothing playing" : (isPlaying ? "Playing now" : "Paused")
-    readonly property string elapsedTimeText: hasPlayer ? root.formatSeconds(root.displayPosition) : "0:00"
-    readonly property string remainingTimeText: trackLength > 0 ? `-${root.formatSeconds(Math.max(0, root.trackLength - root.displayPosition))}` : "--:--"
+    readonly property string elapsedTimeText: hasPlayer ? root.formatSeconds(root.shownPosition) : "0:00"
+    readonly property string remainingTimeText: trackLength > 0 ? `-${root.formatSeconds(Math.max(0, root.trackLength - root.shownPosition))}` : "--:--"
     readonly property string networkIconName: !networkState ? "wifi-off" : (networkState.ethernetConnected ? "ethernet-port" : (networkState.wifiConnected ? (networkState.wifiSignal >= 67 ? "wifi" : (networkState.wifiSignal >= 34 ? "wifi-high" : "wifi-low")) : "wifi-off"))
     readonly property string bluetoothIconName: !bluetoothState || !bluetoothState.adapterAvailable || !bluetoothState.adapterEnabled ? "bluetooth-off" : (bluetoothState.connectedDeviceCount > 0 ? "bluetooth-connected" : "bluetooth")
     readonly property string themeModeIconName: !themeModeState ? "moon" : (themeModeState.mode === "auto" ? "sun-moon" : (themeModeState.target === "light" ? "sun" : "moon"))
     property real displayPosition: 0
+    property real scrubPosition: -1
 
     visible: false
 
@@ -95,30 +99,84 @@ Item {
         }
     }
 
+    component IconButton: Item {
+        id: button
+
+        property url source
+        property int iconSize: 18
+        property real iconOffset: 0
+        property bool filled: false
+        property color iconColor: Theme.Palette.foreground
+        property alias acceptedButtons: buttonArea.acceptedButtons
+
+        signal clicked(var mouse)
+        signal wheelMoved(var wheel)
+
+        width: 40
+        height: 40
+        opacity: enabled ? 1 : 0.38
+        scale: buttonArea.pressed ? 0.96 : 1
+
+        Behavior on scale {
+            NumberAnimation {
+                duration: 120
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 14
+            color: buttonArea.containsMouse ? Theme.Palette.hoverBackground : (button.filled ? Theme.Palette.surface2 : "transparent")
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 140
+                    easing.type: Easing.InOutQuad
+                }
+            }
+        }
+
+        Theme.ThemedIcon {
+            anchors.centerIn: parent
+            anchors.horizontalCenterOffset: button.iconOffset
+            width: button.iconSize
+            height: button.iconSize
+            source: button.source
+            sourceSize.width: width
+            sourceSize.height: height
+            color: button.iconColor
+        }
+
+        MouseArea {
+            id: buttonArea
+
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: mouse => button.clicked(mouse)
+            onWheel: wheel => button.wheelMoved(wheel)
+        }
+    }
+
     Column {
         id: contentColumn
 
         anchors.fill: parent
-        anchors.leftMargin: root.contentPaddingHorizontal
-        anchors.rightMargin: root.contentPaddingHorizontal
-        anchors.topMargin: root.contentPaddingVertical
-        anchors.bottomMargin: root.contentPaddingVertical
-        spacing: 10
+        anchors.margins: root.contentPadding
+        spacing: 12
 
-        Row {
+        Item {
             width: parent.width
-            spacing: 12
+            height: artworkFrame.height
 
             Rectangle {
                 id: artworkFrame
 
-                width: 60
-                height: 60
-                radius: 16
+                width: 56
+                height: 56
+                radius: 14
                 color: Theme.Palette.surface2
-                border.width: 1
-                border.color: Theme.Palette.outline
-                clip: true
 
                 Image {
                     id: artwork
@@ -136,7 +194,7 @@ Item {
                     id: artworkMask
 
                     anchors.fill: parent
-                    radius: 12
+                    radius: artworkFrame.radius
                     visible: false
                     color: "#ffffff"
                     layer.enabled: true
@@ -155,7 +213,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     visible: artwork.status !== Image.Ready
-                    color: root.hasPlayer ? "transparent" : Theme.Palette.surface2
+                    radius: artworkFrame.radius
 
                     gradient: Gradient {
                         GradientStop {
@@ -179,476 +237,268 @@ Item {
                     sourceSize.width: width
                     sourceSize.height: height
                 }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: artworkFrame.radius
+                    color: "transparent"
+                    border.width: 1
+                    border.color: Qt.rgba(1, 1, 1, 0.1)
+                }
             }
 
             Column {
-                width: parent.width - artworkFrame.width - parent.spacing
-                spacing: 8
+                anchors.left: artworkFrame.right
+                anchors.leftMargin: 14
+                anchors.right: playingIndicator.left
+                anchors.rightMargin: playingIndicator.width > 0 ? 12 : 0
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 3
 
-                Row {
+                Text {
                     width: parent.width
-                    spacing: 8
-
-                    Column {
-                        width: parent.width - playingIndicator.width - parent.spacing
-                        spacing: 2
-
-                        Text {
-                            width: parent.width
-                            color: Theme.Palette.foreground
-                            text: root.title
-                            elide: Text.ElideRight
-                            font.family: "Geist"
-                            font.pixelSize: 15
-                            font.weight: Font.DemiBold
-                        }
-
-                        Text {
-                            width: parent.width
-                            color: Theme.Palette.mutedForeground
-                            text: root.artist
-                            elide: Text.ElideRight
-                            visible: text.length > 0
-                            font.family: "Geist"
-                            font.pixelSize: 13
-                            font.weight: Font.Medium
-                        }
-                    }
-
-                    Item {
-                        id: playingIndicator
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: root.isPlaying ? indicatorGlyph.implicitWidth : 0
-                        height: indicatorGlyph.implicitHeight
-                        clip: true
-
-                        MusicIndicator {
-                            id: indicatorGlyph
-
-                            anchors.centerIn: parent
-                            playing: root.isPlaying
-                            barWidth: 3
-                            barSpacing: 2
-                            minimumBarHeight: 5
-                            maximumBarHeight: 16
-                        }
-                    }
+                    color: Theme.Palette.foreground
+                    text: root.title
+                    elide: Text.ElideRight
+                    font.family: "Geist"
+                    font.pixelSize: 15
+                    font.weight: Font.DemiBold
                 }
 
-                Row {
-                    id: progressRow
-
+                Text {
                     width: parent.width
-                    height: Math.max(elapsedTimeLabel.implicitHeight, remainingTimeLabel.implicitHeight, 12)
-                    spacing: 10
-
-                    Item {
-                        id: elapsedTimeFrame
-
-                        width: 40
-                        height: progressRow.height
-
-                        Text {
-                            id: elapsedTimeLabel
-
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            horizontalAlignment: Text.AlignLeft
-                            color: Theme.Palette.mutedForeground
-                            text: root.elapsedTimeText
-                            font.family: "Geist Mono"
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
-                        }
-                    }
-
-                    Item {
-                        width: Math.max(0, progressRow.width - elapsedTimeFrame.width - remainingTimeFrame.width - (progressRow.spacing * 2))
-                        height: progressRow.height
-
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            height: 4
-                            radius: 2
-                            color: Theme.Palette.trackBackground
-                        }
-
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width * root.progress
-                            height: 4
-                            radius: 2
-                            color: Theme.Palette.trackFill
-                        }
-                    }
-
-                    Item {
-                        id: remainingTimeFrame
-
-                        width: 64
-                        height: progressRow.height
-
-                        Text {
-                            id: remainingTimeLabel
-
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width
-                            horizontalAlignment: Text.AlignRight
-                            color: Theme.Palette.mutedForeground
-                            text: root.remainingTimeText
-                            font.family: "Geist Mono"
-                            font.pixelSize: 12
-                            font.weight: Font.Medium
-                        }
-                    }
+                    color: Theme.Palette.mutedForeground
+                    text: root.artist
+                    elide: Text.ElideRight
+                    visible: text.length > 0
+                    font.family: "Geist"
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
                 }
+            }
 
-                Item {
-                    width: Math.max(0, parent.width - 22)
-                    height: 40
+            Item {
+                id: playingIndicator
 
-                    Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        spacing: 8
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: root.isPlaying ? indicatorGlyph.implicitWidth : 0
+                height: indicatorGlyph.implicitHeight
+                clip: true
 
-                        Item {
-                            width: 40
-                            height: 40
-                            opacity: !!root.player && root.player.canGoPrevious ? 1 : 0.38
-                            scale: previousArea.pressed ? 0.96 : 1
+                MusicIndicator {
+                    id: indicatorGlyph
 
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: 120
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: 14
-                                color: previousArea.containsMouse ? Theme.Palette.hoverBackground : "transparent"
-                            }
-
-                            Theme.ThemedIcon {
-                                anchors.centerIn: parent
-                                width: 18
-                                height: 18
-                                source: `${root.iconBasePath}/skip-back.svg`
-                                sourceSize.width: width
-                                sourceSize.height: height
-                            }
-
-                            MouseArea {
-                                id: previousArea
-
-                                anchors.fill: parent
-                                enabled: !!root.player && root.player.canGoPrevious
-                                hoverEnabled: true
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: root.player.previous()
-                            }
-                        }
-
-                        Item {
-                            width: 40
-                            height: 40
-                            opacity: !!root.player && root.player.canTogglePlaying ? 1 : 0.38
-                            scale: playPauseArea.pressed ? 0.96 : 1
-
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: 120
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: 14
-                                color: playPauseArea.containsMouse ? Theme.Palette.hoverBackground : "transparent"
-                            }
-
-                            Theme.ThemedIcon {
-                                anchors.centerIn: parent
-                                anchors.horizontalCenterOffset: root.isPlaying ? 0 : 1
-                                width: root.isPlaying ? 17 : 18
-                                height: root.isPlaying ? 17 : 18
-                                source: root.isPlaying ? `${root.iconBasePath}/pause.svg` : `${root.iconBasePath}/play.svg`
-                                sourceSize.width: width
-                                sourceSize.height: height
-                            }
-
-                            MouseArea {
-                                id: playPauseArea
-
-                                anchors.fill: parent
-                                enabled: !!root.player && root.player.canTogglePlaying
-                                hoverEnabled: true
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: root.player.togglePlaying()
-                            }
-                        }
-
-                        Item {
-                            width: 40
-                            height: 40
-                            opacity: !!root.player && root.player.canGoNext ? 1 : 0.38
-                            scale: nextArea.pressed ? 0.96 : 1
-
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: 120
-                                    easing.type: Easing.OutCubic
-                                }
-                            }
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: 14
-                                color: nextArea.containsMouse ? Theme.Palette.hoverBackground : "transparent"
-                            }
-
-                            Theme.ThemedIcon {
-                                anchors.centerIn: parent
-                                width: 18
-                                height: 18
-                                source: `${root.iconBasePath}/skip-forward.svg`
-                                sourceSize.width: width
-                                sourceSize.height: height
-                            }
-
-                            MouseArea {
-                                id: nextArea
-
-                                anchors.fill: parent
-                                enabled: !!root.player && root.player.canGoNext
-                                hoverEnabled: true
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: root.player.next()
-                            }
-                        }
-                    }
+                    anchors.centerIn: parent
+                    playing: root.isPlaying
+                    barWidth: 3
+                    barSpacing: 2
+                    minimumBarHeight: 5
+                    maximumBarHeight: 16
                 }
             }
         }
 
-        VolumeWidget {
+        Column {
             width: parent.width
-            height: 40
-            volumeState: root.volumeState
-            audioRouteState: root.audioRouteState
+            spacing: 6
+
+            Item {
+                width: parent.width
+                height: 4
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width
+                    height: progressArea.containsMouse || progressArea.pressed ? 6 : 4
+                    radius: height / 2
+                    color: Theme.Palette.trackBackground
+
+                    Behavior on height {
+                        NumberAnimation {
+                            duration: 120
+                            easing.type: Easing.OutCubic
+                        }
+                    }
+
+                    Rectangle {
+                        width: parent.width * root.progress
+                        height: parent.height
+                        radius: parent.radius
+                        color: Theme.Palette.trackFill
+                    }
+                }
+
+                MouseArea {
+                    id: progressArea
+
+                    function positionAt(mouseX) {
+                        return Math.max(0, Math.min(1, mouseX / width)) * root.trackLength;
+                    }
+
+                    // Extend the thin bar's hit area into the surrounding spacing.
+                    anchors.fill: parent
+                    anchors.topMargin: -8
+                    anchors.bottomMargin: -6
+                    enabled: root.canSeek
+                    hoverEnabled: true
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onPressed: mouse => root.scrubPosition = positionAt(mouse.x)
+                    onPositionChanged: mouse => {
+                        if (pressed) {
+                            root.scrubPosition = positionAt(mouse.x);
+                        }
+                    }
+                    onReleased: {
+                        root.player.position = root.scrubPosition;
+                        root.displayPosition = root.scrubPosition;
+                        root.scrubPosition = -1;
+                    }
+                    onCanceled: root.scrubPosition = -1
+                }
+            }
+
+            Item {
+                width: parent.width
+                height: elapsedTimeLabel.implicitHeight
+
+                Text {
+                    id: elapsedTimeLabel
+
+                    color: Theme.Palette.mutedForeground
+                    text: root.elapsedTimeText
+                    font.family: "Geist Mono"
+                    font.pixelSize: 11
+                    font.weight: Font.Medium
+                }
+
+                Text {
+                    anchors.right: parent.right
+                    color: Theme.Palette.mutedForeground
+                    text: root.remainingTimeText
+                    font.family: "Geist Mono"
+                    font.pixelSize: 11
+                    font.weight: Font.Medium
+                }
+            }
+        }
+
+        // Rows are sized to their glyphs rather than their hit areas, so the
+        // visible gaps stay even; the larger buttons overflow into the spacing.
+        Item {
+            width: parent.width
+            height: 32
+
+            Row {
+                anchors.centerIn: parent
+                spacing: 16
+
+                IconButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 36
+                    height: 36
+                    iconSize: 16
+                    enabled: !!root.player && root.player.canGoPrevious
+                    source: `${root.iconBasePath}/skip-back.svg`
+                    onClicked: root.player.previous()
+                }
+
+                IconButton {
+                    iconSize: 20
+                    iconOffset: root.isPlaying ? 0 : 1
+                    enabled: !!root.player && root.player.canTogglePlaying
+                    source: root.isPlaying ? `${root.iconBasePath}/pause.svg` : `${root.iconBasePath}/play.svg`
+                    onClicked: root.player.togglePlaying()
+                }
+
+                IconButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 36
+                    height: 36
+                    iconSize: 16
+                    enabled: !!root.player && root.player.canGoNext
+                    source: `${root.iconBasePath}/skip-forward.svg`
+                    onClicked: root.player.next()
+                }
+            }
         }
 
         Item {
             width: parent.width
+            height: 28
+
+            // Offset by the icon inset so the volume glyphs line up with the
+            // artwork and text edges instead of their 40px hit areas.
+            VolumeWidget {
+                x: -11
+                anchors.verticalCenter: parent.verticalCenter
+                width: parent.width + 22
+                height: 40
+                volumeState: root.volumeState
+                audioRouteState: root.audioRouteState
+            }
+        }
+
+        Row {
+            id: footer
+
+            readonly property int tileCount: (!!root.themeModeState) + (!!root.bluetoothState) + (!!root.networkState)
+            readonly property real tileWidth: (width - (recordingIndicator.visible ? recordingIndicator.width + spacing : 0) - (spacing * (tileCount - 1))) / Math.max(1, tileCount)
+
+            width: parent.width
             height: 40
-            visible: recordingIndicator.recording || !!root.themeModeState || !!root.networkState || !!root.bluetoothState
-            opacity: visible ? 1 : 0
+            spacing: 8
+            visible: recordingIndicator.recording || tileCount > 0
 
             RecordingIndicator {
                 id: recordingIndicator
-                anchors.left: parent.left
+
                 anchors.verticalCenter: parent.verticalCenter
                 recordingState: root.recordingState
             }
 
-            Row {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: 8
+            IconButton {
+                visible: !!root.themeModeState
+                width: footer.tileWidth
+                filled: true
+                enabled: !!root.themeModeState && !root.themeModeState.busy
+                acceptedButtons: Qt.LeftButton | Qt.RightButton
+                source: `${root.iconBasePath}/${root.themeModeIconName}.svg`
 
-                Item {
-                    id: themeModeButton
-
-                    visible: !!root.themeModeState
-                    width: visible ? 40 : 0
-                    height: 40
-                    scale: themeModeButtonArea.pressed ? 0.96 : 1
-                    opacity: root.themeModeState && root.themeModeState.busy ? 0.72 : 1
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 120
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: 120
-                            easing.type: Easing.InOutQuad
-                        }
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 14
-                        color: themeModeButtonArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 140
-                                easing.type: Easing.InOutQuad
-                            }
-                        }
-                    }
-
-                    Theme.ThemedIcon {
-                        anchors.centerIn: parent
-                        width: 18
-                        height: 18
-                        source: `${root.iconBasePath}/${root.themeModeIconName}.svg`
-                        sourceSize.width: width
-                        sourceSize.height: height
-                        opacity: themeModeButtonArea.containsMouse ? 1 : 0.9
-                    }
-
-                    MouseArea {
-                        id: themeModeButtonArea
-
-                        anchors.fill: parent
-                        enabled: !!root.themeModeState && !root.themeModeState.busy
-                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        hoverEnabled: true
-                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-
-                        onClicked: mouse => {
-                            if (!root.themeModeState) {
-                                return;
-                            }
-
-                            if (mouse.button === Qt.RightButton) {
-                                root.themeModeState.setAuto();
-                                return;
-                            }
-
-                            root.themeModeState.toggle();
-                        }
-
-                        onWheel: wheel => {
-                            if (!root.themeModeState) {
-                                return;
-                            }
-
-                            if (wheel.angleDelta.y > 0) {
-                                root.themeModeState.setDark();
-                            } else if (wheel.angleDelta.y < 0) {
-                                root.themeModeState.setLight();
-                            }
-
-                            wheel.accepted = true;
-                        }
+                onClicked: mouse => {
+                    if (mouse.button === Qt.RightButton) {
+                        root.themeModeState.setAuto();
+                    } else {
+                        root.themeModeState.toggle();
                     }
                 }
 
-                Item {
-                    id: bluetoothButton
-
-                    visible: !!root.bluetoothState
-                    width: visible ? 40 : 0
-                    height: 40
-                    scale: bluetoothButtonArea.pressed ? 0.96 : 1
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 120
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 14
-                        color: bluetoothButtonArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 140
-                                easing.type: Easing.InOutQuad
-                            }
-                        }
-                    }
-
-                    Theme.ThemedIcon {
-                        anchors.centerIn: parent
-                        width: 18
-                        height: 18
-                        source: `${root.iconBasePath}/${root.bluetoothIconName}.svg`
-                        sourceSize.width: width
-                        sourceSize.height: height
-                        opacity: bluetoothButtonArea.containsMouse ? 1 : 0.9
-                    }
-
-                    MouseArea {
-                        id: bluetoothButtonArea
-
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (root.bluetoothState) {
-                                root.bluetoothState.openPanel();
-                            }
-                        }
+                onWheelMoved: wheel => {
+                    if (wheel.angleDelta.y > 0) {
+                        root.themeModeState.setDark();
+                    } else if (wheel.angleDelta.y < 0) {
+                        root.themeModeState.setLight();
                     }
                 }
+            }
 
-                Item {
-                    id: networkButton
+            IconButton {
+                visible: !!root.bluetoothState
+                width: footer.tileWidth
+                filled: true
+                source: `${root.iconBasePath}/${root.bluetoothIconName}.svg`
+                onClicked: root.bluetoothState.openPanel()
+            }
 
-                    visible: !!root.networkState
-                    width: visible ? 40 : 0
-                    height: 40
-                    scale: networkButtonArea.pressed ? 0.96 : 1
-
-                    Behavior on scale {
-                        NumberAnimation {
-                            duration: 120
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 14
-                        color: networkButtonArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 140
-                                easing.type: Easing.InOutQuad
-                            }
-                        }
-                    }
-
-                    Theme.ThemedIcon {
-                        anchors.centerIn: parent
-                        width: 18
-                        height: 18
-                        source: `${root.iconBasePath}/${root.networkIconName}.svg`
-                        sourceSize.width: width
-                        sourceSize.height: height
-                        opacity: networkButtonArea.containsMouse ? 1 : 0.9
-                    }
-
-                    MouseArea {
-                        id: networkButtonArea
-
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            if (root.networkState) {
-                                root.networkState.openPanel();
-                            }
-                        }
-                    }
-                }
+            IconButton {
+                visible: !!root.networkState
+                width: footer.tileWidth
+                filled: true
+                source: `${root.iconBasePath}/${root.networkIconName}.svg`
+                iconColor: root.networkState && root.networkState.dnsFailing ? Theme.Palette.danger : Theme.Palette.foreground
+                onClicked: root.networkState.openPanel()
             }
         }
     }
 }
+

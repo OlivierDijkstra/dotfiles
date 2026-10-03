@@ -99,7 +99,7 @@ Item {
             Rectangle {
                 id: wifiStatusCard
 
-                width: Math.floor((parent.width - parent.spacing) / 2)
+                width: Math.floor((parent.width - (parent.spacing * 2)) / 3)
                 height: 60
                 radius: 20
                 color: root.networkState.wifiConnected ? Theme.Palette.selectedBackground : Theme.Palette.surface2
@@ -134,7 +134,7 @@ Item {
             }
 
             Rectangle {
-                width: statusCardRow.width - wifiStatusCard.width - statusCardRow.spacing
+                width: wifiStatusCard.width
                 height: 60
                 radius: 20
                 color: root.networkState.ethernetConnected ? Theme.Palette.selectedBackground : Theme.Palette.surface2
@@ -158,13 +158,67 @@ Item {
 
                     Text {
                         width: parent.width
-                        color: Theme.Palette.foreground
+                        color: root.networkState.ethernetSlow ? Theme.Palette.danger : Theme.Palette.foreground
                         text: root.networkState.ethernetSummary
                         font.family: "Geist"
                         font.pixelSize: 15
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
                     }
+                }
+            }
+
+            Rectangle {
+                width: statusCardRow.width - (wifiStatusCard.width * 2) - (statusCardRow.spacing * 2)
+                height: 60
+                radius: 20
+                color: root.networkState.tailscaleConnected ? Theme.Palette.selectedBackground : (tailscaleArea.containsMouse ? Theme.Palette.hoverBackground : Theme.Palette.surface2)
+                opacity: root.networkState.tailscaleToggleable ? 1 : 0.42
+                scale: tailscaleArea.pressed ? 0.96 : 1
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: 120
+                        easing.type: Easing.OutCubic
+                    }
+                }
+
+                Column {
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    anchors.topMargin: 11
+                    anchors.bottomMargin: 11
+                    spacing: 2
+
+                    Text {
+                        width: parent.width
+                        color: Theme.Palette.mutedForeground
+                        text: "Tailscale"
+                        font.family: "Geist"
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                    }
+
+                    Text {
+                        width: parent.width
+                        color: Theme.Palette.foreground
+                        text: root.networkState.tailscaleSummary
+                        font.family: "Geist"
+                        font.pixelSize: 15
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+                }
+
+                MouseArea {
+                    id: tailscaleArea
+
+                    anchors.fill: parent
+                    enabled: root.networkState.tailscaleToggleable && !root.networkState.busy
+                    hoverEnabled: true
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: root.networkState.toggleTailscale()
                 }
             }
         }

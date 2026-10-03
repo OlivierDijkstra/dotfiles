@@ -24,19 +24,35 @@ Item {
     property string ethernetDevice: ""
     property string ethernetState: ""
     property string ethernetConnection: ""
+    property int ethernetSpeed: 0
+    property int ethernetMaxSpeed: 0
+    property bool dnsFailing: false
+    property string tailscaleState: ""
     property var wifiNetworks: []
     property string statusError: ""
     property string actionMessage: ""
     property bool actionMessageIsError: false
     property bool pendingScanRefresh: false
     property bool pendingToggleEnabled: false
+    property bool pendingTailscaleEnabled: false
     property string pendingWifiTargetSsid: ""
     property bool toggleCommandActive: false
+    property bool tailscaleCommandActive: false
     property bool connectCommandActive: false
     property bool settingsCommandActive: false
 
-    readonly property bool busy: wifiToggleProcess.running || wifiConnectProcess.running || settingsProcess.running
-    readonly property string ethernetSummary: ethernetConnected ? "online" : (ethernetAvailable ? "offline" : "unavailable")
+    readonly property bool busy: wifiToggleProcess.running || tailscaleToggleProcess.running || wifiConnectProcess.running || settingsProcess.running
+    readonly property bool tailscaleConnected: tailscaleState === "Running"
+    readonly property bool tailscaleToggleable: tailscaleConnected || tailscaleState === "Stopped"
+    readonly property string tailscaleSummary: tailscaleConnected
+        ? "online"
+        : (tailscaleState === "" ? "unavailable" : (tailscaleState === "Stopped" ? "off" : "logged out"))
+    readonly property bool ethernetSlow: ethernetConnected && ethernetSpeed > 0 && ethernetSpeed < ethernetMaxSpeed
+    readonly property string ethernetSummary: !ethernetConnected
+        ? (ethernetAvailable ? "offline" : "unavailable")
+        : (ethernetSpeed <= 0 ? "online" : (ethernetSlow
+            ? `${ethernetSpeed / 1000}/${ethernetMaxSpeed / 1000} Gbit/s`
+            : (ethernetSpeed >= 1000 ? `${ethernetSpeed / 1000} Gbit/s` : `${ethernetSpeed} Mbit/s`)))
     readonly property string ethernetDetail: ethernetConnected
         ? (ethernetConnection || ethernetDevice || "wired connected")
         : (ethernetAvailable ? "No active wired connection" : "No ethernet adapter detected")
@@ -114,6 +130,10 @@ Item {
         ethernetDevice = ethernet.device || "";
         ethernetState = ethernet.state || "";
         ethernetConnection = ethernet.connection || "";
+        ethernetSpeed = isFinite(Number(ethernet.speed)) ? Number(ethernet.speed) : 0;
+        ethernetMaxSpeed = isFinite(Number(ethernet.maxSpeed)) ? Number(ethernet.maxSpeed) : 0;
+        dnsFailing = payload.dnsFailing === true;
+        tailscaleState = (payload.tailscale || {}).state || "";
 
         wifiNetworks = Array.isArray(payload.networks) ? payload.networks : [];
         statusError = payload.error || "";
@@ -128,6 +148,16 @@ Item {
         setNotice(pendingToggleEnabled ? "Turning Wi-Fi on..." : "Turning Wi-Fi off...", false);
         wifiToggleProcess.exec(["nmcli", "radio", "wifi", pendingToggleEnabled ? "on" : "off"]);
         delayedRefreshTimer.restart();
+    }
+
+    function toggleTailscale() {
+        if (!tailscaleToggleable || tailscaleToggleProcess.running) {
+            return;
+        }
+
+        pendingTailscaleEnabled = !tailscaleConnected;
+        setNotice(pendingTailscaleEnabled ? "Connecting Tailscale..." : "Disconnecting Tailscale...", false);
+        tailscaleToggleProcess.exec(["tailscale", pendingTailscaleEnabled ? "up" : "down"]);
     }
 
     function connectWifiNetwork(network) {
@@ -249,6 +279,32 @@ Item {
             }
 
             root.setNotice(root.summarizeProcessOutput(wifiToggleError.text, "Unable to change the Wi-Fi radio state."), true);
+        }
+    }
+
+    Process {
+        id: tailscaleToggleProcess
+
+        stderr: StdioCollector {
+            id: tailscaleToggleError
+        }
+
+        onStarted: root.tailscaleCommandActive = true
+
+        onRunningChanged: {
+            if (running || !root.tailscaleCommandActive) {
+                return;
+            }
+
+            root.tailscaleCommandActive = false;
+            delayedRefreshTimer.restart();
+
+            if ((tailscaleToggleError.text || "").trim().length === 0) {
+                root.setNotice(root.pendingTailscaleEnabled ? "Tailscale connected." : "Tailscale disconnected.", false);
+                return;
+            }
+
+            root.setNotice(root.summarizeProcessOutput(tailscaleToggleError.text, "Unable to change the Tailscale connection."), true);
         }
     }
 

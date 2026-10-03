@@ -2,8 +2,11 @@
 
 import argparse
 import json
+import re
+import socket
 import subprocess
 import sys
+import threading
 
 
 def run_command(command):
@@ -166,6 +169,54 @@ def scan_wifi_networks():
     return networks[:6], ""
 
 
+def parse_ethernet_link(device):
+    stdout, _ = run_command(["ethtool", device])
+    speed = re.search(r"Speed: (\d+)Mb/s", stdout)
+    modes = {}
+    section = ""
+
+    for line in stdout.splitlines():
+        if ":" in line:
+            section, _, line = line.partition(":")
+            section = section.strip()
+
+        modes.setdefault(section, set()).update(int(mode) for mode in re.findall(r"(\d+)base", line))
+
+    shared = modes.get("Supported link modes", set()) & modes.get("Link partner advertised link modes", set())
+
+    return {
+        "speed": int(speed.group(1)) if speed else 0,
+        "maxSpeed": max(shared, default=0),
+    }
+
+
+def dns_resolves(host="archlinux.org", timeout=2):
+    resolved = []
+
+    def lookup():
+        try:
+            socket.getaddrinfo(host, None)
+            resolved.append(True)
+        except OSError:
+            pass
+
+    thread = threading.Thread(target=lookup, daemon=True)
+    thread.start()
+    thread.join(timeout)
+    return bool(resolved)
+
+
+def parse_tailscale_status():
+    stdout, stderr = run_command(["tailscale", "status", "--json"])
+
+    try:
+        status = json.loads(stdout) if stdout and not stderr else {}
+    except json.JSONDecodeError:
+        status = {}
+
+    return {"state": status.get("BackendState", "")}
+
+
 def build_payload(include_scan):
     rows, device_error = parse_device_status()
     wifi_enabled, radio_error = parse_wifi_radio()
@@ -195,21 +246,31 @@ def build_payload(include_scan):
         "device": ethernet_row["device"] if ethernet_row else "",
         "state": ethernet_row["state"] if ethernet_row else "",
         "connection": ethernet_row["connection"] if ethernet_row else "",
+        "speed": 0,
+        "maxSpeed": 0,
     }
 
+    if ethernet["connected"]:
+        ethernet.update(parse_ethernet_link(ethernet["device"]))
+
+    online = wifi["connected"] or ethernet["connected"]
+    dns_failing = online and not dns_resolves()
     networks = []
     network_error = ""
 
     if include_scan and wifi_enabled:
         networks, network_error = scan_wifi_networks()
 
-    errors = [error for error in [device_error, radio_error, active_wifi_error, network_error] if error]
+    dns_error = "DNS lookups are failing." if dns_failing else ""
+    errors = [error for error in [dns_error, device_error, radio_error, active_wifi_error, network_error] if error]
 
     return {
         "wifi": wifi,
         "ethernet": ethernet,
+        "tailscale": parse_tailscale_status(),
         "networks": networks,
-        "online": wifi["connected"] or ethernet["connected"],
+        "online": online,
+        "dnsFailing": dns_failing,
         "error": errors[0] if errors else "",
     }
 

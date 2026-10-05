@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Install or refresh all shared skills for Claude Code and Codex.
+# Uses the skills CLI, not upstream install.sh, to preserve global instructions.
+set -euo pipefail
+
+export DISABLE_TELEMETRY=1
+exec npx --yes skills@1.5.23 add sebastiaan-john/skills \
+  --skill '*' \
+  --agent claude-code codex \
+  --global --yes

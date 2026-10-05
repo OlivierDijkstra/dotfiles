@@ -18,6 +18,7 @@ Item {
     property var networkState: null
     property var bluetoothState: null
     property var themeModeState: null
+    property var keepAwakeState: null
     readonly property string iconBasePath: "../../assets/icons/lucide"
 
     readonly property bool available: true
@@ -106,7 +107,9 @@ Item {
         property int iconSize: 18
         property real iconOffset: 0
         property bool filled: false
-        property color iconColor: Theme.Palette.foreground
+        property bool checked: false
+        property string label: ""
+        property color iconColor: checked ? Theme.Palette.accentForeground : Theme.Palette.foreground
         property alias acceptedButtons: buttonArea.acceptedButtons
 
         signal clicked(var mouse)
@@ -127,7 +130,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: 14
-            color: buttonArea.containsMouse ? Theme.Palette.hoverBackground : (button.filled ? Theme.Palette.surface2 : "transparent")
+            color: button.checked ? (buttonArea.containsMouse ? Theme.Palette.secondaryForeground : Theme.Palette.accent) : (buttonArea.containsMouse ? Theme.Palette.hoverBackground : (button.filled ? Theme.Palette.surface2 : "transparent"))
 
             Behavior on color {
                 ColorAnimation {
@@ -137,15 +140,30 @@ Item {
             }
         }
 
-        Theme.ThemedIcon {
+        Row {
             anchors.centerIn: parent
             anchors.horizontalCenterOffset: button.iconOffset
-            width: button.iconSize
-            height: button.iconSize
-            source: button.source
-            sourceSize.width: width
-            sourceSize.height: height
-            color: button.iconColor
+            spacing: 6
+
+            Theme.ThemedIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                width: button.iconSize
+                height: button.iconSize
+                source: button.source
+                sourceSize.width: width
+                sourceSize.height: height
+                color: button.iconColor
+            }
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: text.length > 0
+                text: button.label
+                color: button.iconColor
+                font.family: "Geist Mono"
+                font.pixelSize: 12
+                font.weight: Font.DemiBold
+            }
         }
 
         MouseArea {
@@ -442,7 +460,7 @@ Item {
         Row {
             id: footer
 
-            readonly property int tileCount: (!!root.themeModeState) + (!!root.bluetoothState) + (!!root.networkState)
+            readonly property int tileCount: (!!root.keepAwakeState) + (!!root.themeModeState) + (!!root.bluetoothState) + (!!root.networkState)
             readonly property real tileWidth: (width - (recordingIndicator.visible ? recordingIndicator.width + spacing : 0) - (spacing * (tileCount - 1))) / Math.max(1, tileCount)
 
             width: parent.width
@@ -455,6 +473,22 @@ Item {
 
                 anchors.verticalCenter: parent.verticalCenter
                 recordingState: root.recordingState
+            }
+
+            // Click keeps the system awake until turned off; scroll sets a timer.
+            IconButton {
+                visible: !!root.keepAwakeState
+                width: footer.tileWidth
+                filled: true
+                checked: !!root.keepAwakeState && root.keepAwakeState.active
+                label: !!root.keepAwakeState && root.keepAwakeState.timed ? root.keepAwakeState.remainingText : ""
+                source: `${root.iconBasePath}/coffee.svg`
+                onClicked: root.keepAwakeState.toggle()
+                onWheelMoved: wheel => {
+                    if (wheel.angleDelta.y !== 0) {
+                        root.keepAwakeState.adjust(wheel.angleDelta.y > 0 ? 1 : -1);
+                    }
+                }
             }
 
             IconButton {

@@ -56,6 +56,11 @@ PanelWindow {
         id: recordingState
     }
 
+    Widgets.KeepAwakeState {
+        id: keepAwakeState
+        window: root
+    }
+
     property list<Item> widgets: [
         Widgets.AudioRouteWidget {
             recordingState: recordingState
@@ -77,6 +82,7 @@ PanelWindow {
         Widgets.DateTimeWidget {
             recordingState: recordingState
             mediaState: mediaState
+            keepAwakeState: keepAwakeState
         },
         Widgets.MediaWidget {
             recordingState: recordingState
@@ -86,6 +92,7 @@ PanelWindow {
             networkState: networkState
             bluetoothState: bluetoothState
             themeModeState: themeModeState
+            keepAwakeState: keepAwakeState
         }
     ]
 

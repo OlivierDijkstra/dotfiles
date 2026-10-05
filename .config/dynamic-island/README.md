@@ -37,6 +37,10 @@ Recording appears as an inline `RecordingIndicator`: a red dot and elapsed time 
 
 The indicator invokes `screenrecord --stop`, which only stops an existing recording. The regular `screenrecord` command retains its start/stop toggle behavior.
 
+## Keep awake
+
+`KeepAwakeState` holds a Wayland idle inhibitor on the island's surface, which pauses hypridle's DPMS and suspend listeners. The coffee tile in the expanded panel toggles it indefinitely; scrolling sets a timer in 30-minute steps. While active, a coffee glyph and any remaining time appear beside the clock.
+
 ## Rendering and transitions
 
 The surface animates content width, height, and bottom radius with `220ms` `Easing.InOutCubic` Behaviors. Total width is derived from the animated content width and shoulders, so the content and surface stay aligned. Initial geometry is applied immediately, and later geometry changes can reverse from their current values without overshooting.

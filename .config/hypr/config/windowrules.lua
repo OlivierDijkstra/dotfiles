@@ -68,6 +68,30 @@ hl.window_rule({
     float = true,
 })
 
+-- Bitwarden extension pop-outs: tiled, they render half-drawn and drop
+-- keyboard input until resized. 480x650 is the size Bitwarden expects.
+-- Chromium browsers (Helium, Chrome) put the extension ID in the class.
+hl.window_rule({
+    match           = { class = ".*nngceckbapebfimnlniiiahkandclblb.*" },
+    float           = true,
+    center          = true,
+    size            = { 480, 650 },
+    no_screen_share = true,
+})
+
+-- Zen sets the extension title after the window maps, so static rules can't
+-- match it (https://wiki.hypr.land/Configuring/Code-Snippets/).
+hl.on("window.title", function(w)
+    if w.class ~= "zen" or w.floating then return end
+    if not w.title:match("^Extension: %(Bitwarden") then return end
+
+    hl.dispatch(hl.dsp.window.float({ action = "set", window = w }))
+    hl.dispatch(hl.dsp.window.resize({ x = 480, y = 650, window = w }))
+    hl.dispatch(hl.dsp.window.center({ window = w }))
+    hl.dispatch(hl.dsp.window.set_prop({ prop = "no_screen_share", value = "1", window = w }))
+    hl.dispatch(hl.dsp.focus({ window = w }))
+end)
+
 -- Application opacity settings
 hl.window_rule({ match = { class = "^(ghostty)$" },  opacity = 0.95 })
 hl.window_rule({ match = { class = "^(vesktop)$" },  opacity = 0.95 })

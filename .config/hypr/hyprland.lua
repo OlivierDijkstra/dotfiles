@@ -18,3 +18,5 @@ require("config.keybinds")
 require("config.monitor")
 require("config.variables")
 require("config.windowrules")
+
+hl.bind("CTRL + SHIFT + P", hl.dsp.global("com.t3tools.T3Code:capture-window"))

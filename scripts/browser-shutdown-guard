@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Close browsers gracefully before reboot/poweroff.
+#
+# Hyprland has no session manager, so on shutdown the compositor and the
+# browser get SIGTERM at the same time. The browser loses its Wayland
+# connection mid-save, records the exit as a crash, and the next launch skips
+# pinned tabs and session restore. Run under a logind "delay" inhibitor (see
+# browser-shutdown-guard.service) so we can SIGTERM the browser first.
+set -euo pipefail
+
+BROWSERS=(helium)
+# In 0.1s ticks. logind's InhibitDelayMaxSec defaults to 5s; stay under it.
+WAIT_TICKS=45
+
+log() {
+  printf 'browser-shutdown-guard: %s\n' "$*"
+}
+
+# Main browser processes only; child processes carry --type= (Chromium
+# rewrites their cmdline into one space-separated string).
+main_pids() {
+  local name pid
+  for name in "${BROWSERS[@]}"; do
+    for pid in $(pgrep -u "$UID" -x "$name"); do
+      grep -qa -- '--type=' "/proc/$pid/cmdline" 2>/dev/null || echo "$pid"
+    done
+  done
+}
+
+any_alive() {
+  local pid
+  for pid; do
+    kill -0 "$pid" 2>/dev/null && return 0
+  done
+  return 1
+}
+
+close_browsers() {
+  local pids i=0
+  pids=$(main_pids)
+  if [[ -z "$pids" ]]; then
+    log "shutdown detected, no browsers running"
+    return 0
+  fi
+
+  log "shutdown detected, closing browsers: $(echo $pids)"
+  kill -TERM $pids 2>/dev/null || true
+
+  while any_alive $pids; do
+    if (( i++ >= WAIT_TICKS )); then
+      log "timed out waiting for browsers"
+      return 0
+    fi
+    sleep 0.1
+  done
+  log "browsers closed"
+}
+
+# Process substitution, not a pipe: exiting must release the inhibitor
+# immediately instead of waiting for gdbus to notice the closed pipe.
+while IFS= read -r line; do
+  if [[ "$line" == *PrepareForShutdown*true* ]]; then
+    close_browsers
+    exit 0
+  fi
+done < <(gdbus monitor \
+  --system \
+  --dest org.freedesktop.login1 \
+  --object-path /org/freedesktop/login1)

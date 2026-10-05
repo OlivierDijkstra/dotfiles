@@ -1,0 +1,16 @@
+[Unit]
+Description=Close browsers gracefully before shutdown
+After=graphical-session.target
+Wants=graphical-session.target
+PartOf=graphical-session.target
+ConditionPathExists=%h/dotfiles/scripts/browser-shutdown-guard
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/systemd-inhibit --what=shutdown --mode=delay --who="Browser shutdown guard" --why="Closing browsers cleanly" %h/dotfiles/scripts/browser-shutdown-guard
+Restart=on-failure
+RestartSec=2
+Slice=session.slice
+
+[Install]
+WantedBy=default.target

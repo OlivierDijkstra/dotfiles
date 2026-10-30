@@ -178,6 +178,7 @@ cmd_backup() {
 
     local summary warning=null
     summary=$(jq -c 'select(.message_type == "summary")' "$out" | tail -n1)
+    [[ -n $summary ]] || { echo "restic produced no summary" >"$ERR_LOG"; return 1; }
     if ((rc == 3)); then
         warning=$(jq -Rn '"warning: \([inputs | fromjson? | select(.message_type == "error")] | length) files could not be read"' "$ERR_LOG")
     fi

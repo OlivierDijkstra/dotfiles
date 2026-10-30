@@ -62,6 +62,10 @@ PanelWindow {
         window: root
     }
 
+    Widgets.BackupState {
+        id: backupState
+    }
+
     property list<Item> widgets: [
         Widgets.AudioRouteWidget {
             recordingState: recordingState
@@ -85,6 +89,7 @@ PanelWindow {
             recordingState: recordingState
             mediaState: mediaState
             keepAwakeState: keepAwakeState
+            backupState: backupState
         },
         Widgets.MediaWidget {
             recordingState: recordingState
@@ -95,6 +100,7 @@ PanelWindow {
             bluetoothState: bluetoothState
             themeModeState: themeModeState
             keepAwakeState: keepAwakeState
+            backupState: backupState
         }
     ]
 

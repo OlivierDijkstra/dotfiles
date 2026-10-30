@@ -19,6 +19,7 @@ Item {
     property var bluetoothState: null
     property var themeModeState: null
     property var keepAwakeState: null
+    property var backupState: null
     readonly property string iconBasePath: "../../assets/icons/lucide"
 
     readonly property bool available: true
@@ -454,6 +455,80 @@ Item {
                 height: 40
                 volumeState: root.volumeState
                 audioRouteState: root.audioRouteState
+            }
+        }
+
+        // One muted line while healthy; on alert, the reason and where to look.
+        // Clicking opens the unit's journal in a terminal.
+        Item {
+            id: backupStatus
+
+            readonly property bool alert: !!root.backupState && root.backupState.alert
+
+            visible: !!root.backupState
+            width: parent.width
+            height: backupText.implicitHeight
+
+            Theme.ThemedIcon {
+                id: backupIcon
+
+                y: 1
+                width: 14
+                height: 14
+                source: root.backupState && root.backupState.running ? `${root.iconBasePath}/hard-drive-upload.svg` : `${root.iconBasePath}/hard-drive.svg`
+                sourceSize.width: width
+                sourceSize.height: height
+                color: backupStatus.alert ? Theme.Palette.danger : Theme.Palette.mutedForeground
+            }
+
+            Column {
+                id: backupText
+
+                anchors.left: backupIcon.right
+                anchors.leftMargin: 8
+                anchors.right: parent.right
+                spacing: 2
+
+                Text {
+                    width: parent.width
+                    text: !root.backupState ? "" : (backupStatus.alert ? root.backupState.alertText : root.backupState.summaryText)
+                    color: backupStatus.alert ? Theme.Palette.danger : (backupArea.containsMouse ? Theme.Palette.secondaryForeground : Theme.Palette.mutedForeground)
+                    elide: Text.ElideRight
+                    font.family: "Geist"
+                    font.pixelSize: 13
+                    font.weight: Font.Medium
+                }
+
+                Text {
+                    width: parent.width
+                    visible: backupStatus.alert && text.length > 0
+                    text: root.backupState ? root.backupState.detailText : ""
+                    color: Theme.Palette.mutedForeground
+                    elide: Text.ElideRight
+                    font.family: "Geist"
+                    font.pixelSize: 12
+                    font.weight: Font.Medium
+                }
+
+                Text {
+                    width: parent.width
+                    visible: backupStatus.alert
+                    text: root.backupState ? root.backupState.hintText : ""
+                    color: backupArea.containsMouse ? Theme.Palette.secondaryForeground : Theme.Palette.disabledForeground
+                    elide: Text.ElideRight
+                    font.family: "Geist Mono"
+                    font.pixelSize: 11
+                    font.weight: Font.Medium
+                }
+            }
+
+            MouseArea {
+                id: backupArea
+
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: root.backupState.openJournal()
             }
         }
 

@@ -15,6 +15,7 @@ Item {
     property date now: new Date()
     property var mediaState: null
     property var keepAwakeState: null
+    property var backupState: null
     readonly property var player: mediaState ? mediaState.activePlayer : null
     readonly property bool showMusicIndicator: !!player && player.isPlaying
     property int surfaceWidth: Math.max(156, Math.ceil(contentRow.implicitWidth + (horizontalPadding * 2)))
@@ -58,6 +59,11 @@ Item {
         KeepAwakeIndicator {
             anchors.verticalCenter: parent.verticalCenter
             keepAwakeState: root.keepAwakeState
+        }
+
+        BackupIndicator {
+            anchors.verticalCenter: parent.verticalCenter
+            backupState: root.backupState
         }
 
         Item {

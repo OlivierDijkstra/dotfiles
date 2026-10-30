@@ -9,7 +9,7 @@ A Quickshell panel for Arch Linux and Hyprland, anchored to the top of the scree
 - `components/IslandScaffold.qml`: coordinates content hiding, surface morphing, and content revealing.
 - `components/IslandSurface.qml`: vector surface and animated geometry.
 - `components/IslandWidgetHost.qml`: attaches widgets and handles temporary blur/fade transitions.
-- `components/widgets/`: date/workspace, media, volume, recording, audio routing, network, and Bluetooth components.
+- `components/widgets/`: date/workspace, media, volume, recording, audio routing, network, Bluetooth, and backup status components.
 - `components/Motion.js`: shared animation settings.
 - `components/Palette.qml`: generated semantic colors; the island stays black in every desktop mode.
 
@@ -41,6 +41,14 @@ The indicator invokes `screenrecord --stop`, which only stops an existing record
 
 `KeepAwakeState` holds a Wayland idle inhibitor on the island's surface, which pauses hypridle's DPMS and suspend listeners. The coffee tile in the expanded panel toggles it indefinitely; scrolling sets a timer in 30-minute steps. While active, a coffee glyph and any remaining time appear beside the clock.
 
+## Backup status
+
+`BackupState` watches `/var/lib/restic-oliarch/status.json` with `FileView`. That file is written by the restic backup in `system/restic-oliarch`. A one-minute timer refreshes relative times and retries while the file is missing; no process is polled.
+
+- Healthy: nothing is shown beside the clock. The expanded panel has a muted line, e.g. "Last backup 3h ago · +1.2 GB".
+- Running: a muted drive glyph pulses beside the clock.
+- Alert: the glyph turns red when the last run failed, when there has been no success for two days, when a run was interrupted (`running` for over 12 hours), when the weekly check failed, or when the status file is missing. The expanded panel shows the reason, restic's error, the last success and a `journalctl -u …` hint. Clicking the line opens that journal in Ghostty.
+
 ## Rendering and transitions
 
 The surface animates content width, height, and bottom radius with `220ms` `Easing.InOutCubic` Behaviors. Total width is derived from the animated content width and shoulders, so the content and surface stay aligned. Initial geometry is applied immediately, and later geometry changes can reverse from their current values without overshooting.
@@ -68,6 +76,6 @@ The compositor reserves the compact date/workspace pill's height at the top of t
 
 - `make run`: run the shell.
 - `make lint`: lint all QML with the local Qt installation.
-- `make test`: run audio-state, transition, rendered-pixel, and recorder lifecycle regression tests. Each QML suite gets its own offscreen OpenGL scene; the recorder test runs an isolated Quickshell instance with temporary status files and a harmless stand-in process.
+- `make test`: run audio-state, transition, rendered-pixel, recorder lifecycle, and backup status regression tests. Each QML suite gets its own offscreen OpenGL scene. The recorder and backup tests each run an isolated Quickshell instance with temporary status files; the recorder test uses a harmless stand-in process.
 
 Tests cover transition ordering and reversals, dynamic dimensions, blur-layer handoff, inline recording layout/stop behavior, volume/mute changes, audio-device hotplug, and recorder start/crash/restart events. They require Qt Quick Test, an OpenGL-capable Qt rendering backend, Quickshell, Python 3, and `procps-ng`. They do not change real audio settings or start a screen recording.

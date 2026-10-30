@@ -19,3 +19,4 @@ test:
 		QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=rhi QSG_RHI_BACKEND=opengl $(QMLTESTRUNNER) -input "$$suite" || exit $$?; \
 	done
 	python3 "$(CONFIG_PATH)/tests/test_recording.py"
+	python3 "$(CONFIG_PATH)/tests/test_backup.py"

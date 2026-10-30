@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# Install the oliarch restic backup from system/restic-oliarch as root-owned
+# copies, replacing the old units that were symlinked into /home (those were
+# dropped at boot because @home mounts after systemd loads units).
+# Run once with sudo; safe to re-run after changing the sources.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SRC="$(cd "$SCRIPT_DIR/.." && pwd)/system/restic-oliarch"
+CONF_DIR=/etc/restic-oliarch
+UNIT_DIR=/etc/systemd/system
+REPO=/mnt/nasigoreng/backups/restic
+MOUNT=/mnt/nasigoreng
+UNITS=(
+    restic-oliarch-backup.service
+    restic-oliarch-backup.timer
+    restic-oliarch-check.service
+    restic-oliarch-check.timer
+    restic-oliarch-notify@.service
+)
+TIMERS=(restic-oliarch-backup.timer restic-oliarch-check.timer)
+PASSWORD_CANDIDATES=(/root/.config/restic/password /home/oli/.config/restic/password)
+
+die() {
+    echo "error: $*" >&2
+    exit 1
+}
+
+[[ $EUID -eq 0 ]] || die "run as root: sudo $0"
+
+# Check a password file against the repository without printing it.
+opens_repo() {
+    [[ -s $1 ]] && RESTIC_REPOSITORY=$REPO RESTIC_PASSWORD_FILE=$1 \
+        restic --no-lock --no-cache cat config >/dev/null 2>&1
+}
+
+# 1. Remove the old units, but only links that resolve into /home.
+for unit in restic-backup.timer restic-backup.service; do
+    links=("$UNIT_DIR/timers.target.wants/$unit" "$UNIT_DIR/$unit")
+    for link in "${links[@]}"; do
+        if [[ -L $link && $(readlink -m "$link") == /home/* ]]; then
+            systemctl disable --now "$unit" >/dev/null 2>&1 || true
+            rm -f "$link"
+            echo "Removed old $link"
+        fi
+    done
+done
+
+# 2. Units and script as root-owned copies.
+for unit in "${UNITS[@]}"; do
+    [[ -L $UNIT_DIR/$unit ]] && rm -f "$UNIT_DIR/$unit"
+    install -m 0644 -o root -g root "$SRC/$unit" "$UNIT_DIR/$unit"
+done
+install -m 0755 -o root -g root "$SRC/oliarch-backup" /usr/local/sbin/oliarch-backup
+
+# 3. Configuration; env and excludes always follow the repo.
+install -d -m 0700 -o root -g root "$CONF_DIR"
+install -m 0600 -o root -g root "$SRC/env.example" "$CONF_DIR/env"
+install -m 0600 -o root -g root "$SRC/excludes" "$CONF_DIR/excludes"
+
+install -d -m 0755 -o root -g root /var/lib/restic-oliarch /var/backups/oliarch
+install -d -m 0700 -o root -g root /var/cache/restic-oliarch
+
+# 4. Password: keep a working one, otherwise copy the first candidate that opens the repo.
+mountpoint -q "$MOUNT" || mount "$MOUNT" || die "$MOUNT is not mounted"
+if opens_repo "$CONF_DIR/password"; then
+    echo "Keeping existing $CONF_DIR/password"
+else
+    [[ -e $CONF_DIR/password ]] && mv -f "$CONF_DIR/password" "$CONF_DIR/password.old"
+    for candidate in "${PASSWORD_CANDIDATES[@]}"; do
+        if opens_repo "$candidate"; then
+            install -m 0600 -o root -g root "$candidate" "$CONF_DIR/password"
+            echo "Installed $CONF_DIR/password from $candidate"
+            break
+        fi
+    done
+    opens_repo "$CONF_DIR/password" ||
+        die "no password file opens $REPO (tried ${PASSWORD_CANDIDATES[*]})"
+fi
+
+# 5. Seed status.json from the latest existing snapshot so the island has history.
+status=/var/lib/restic-oliarch/status.json
+if [[ ! -e $status ]]; then
+    if RESTIC_REPOSITORY=$REPO RESTIC_PASSWORD_FILE=$CONF_DIR/password RESTIC_CACHE_DIR=/var/cache/restic-oliarch \
+        restic --no-lock snapshots --host oliarch --json |
+        jq -e 'sort_by(.time) | last | (.time | sub("\\.[0-9]+"; "")) as $time
+            | {host: "oliarch", state: "ok", last_success: $time, last_end: $time, snapshot_id: .id}' >"$status"; then
+        chmod 0644 "$status"
+        echo "Seeded $status from the latest snapshot"
+    else
+        rm -f "$status"
+    fi
+fi
+
+systemctl daemon-reload
+systemctl enable --now "${TIMERS[@]}"
+systemctl list-timers --no-pager "${TIMERS[@]}"

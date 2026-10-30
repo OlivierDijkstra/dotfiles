@@ -1,0 +1,6 @@
+[Unit]
+Description=Desktop notification for failed %i
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/oliarch-backup notify %i

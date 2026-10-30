@@ -1,0 +1,143 @@
+# restic exclude patterns for oliarch (installed to /etc/restic-oliarch/excludes).
+# Patterns without a leading / match at any depth. Directories that contain a
+# CACHEDIR.TAG (cargo target/, many tool caches), a CMakeCache.txt (CMake build
+# trees) or a .nobackup file are skipped by flags in oliarch-backup as well.
+
+# --- Re-downloadable toolchains, package stores and app binaries ---
+/home/oli/.cache
+/home/oli/.bun
+/home/oli/.npm
+/home/oli/.pnpm-store
+/home/oli/.local/share/pnpm
+/home/oli/.yarn/cache
+/home/oli/.cargo/registry
+/home/oli/.cargo/git
+/home/oli/.cargo/bin
+/home/oli/.rustup
+/home/oli/go/pkg
+/home/oli/go/bin
+/home/oli/.pub-cache
+/home/oli/.gradle
+/home/oli/.m2/repository
+/home/oli/.config/nvm/versions
+/home/oli/.config/nvm/.cache
+/home/oli/.codex-cli-npm
+/home/oli/.electron-gyp
+/home/oli/.nv
+/home/oli/.triton
+/home/oli/.local/share/uv
+/home/oli/.local/lib/ollama
+/home/oli/.local/state/codex-desktop/tmp
+/home/oli/.local/share/claude/versions
+/home/oli/.local/share/cursor-agent
+/home/oli/.local/share/google-cloud-sdk
+/home/oli/.local/share/nvim/lazy
+/home/oli/.local/share/nvim/mason
+/home/oli/.local/share/zed/languages
+/home/oli/.local/share/zed/node
+/home/oli/.local/share/zed/extensions
+/home/oli/.local/share/zed/external_agents
+/home/oli/.local/share/lutris/runtime
+/home/oli/.cursor/extensions
+/home/oli/.t3/tools
+/home/oli/Applications
+*.AppImage
+
+# --- Games, containers, trash, models ---
+/home/oli/Games
+/home/oli/.steam
+/home/oli/.local/share/Steam
+SteamLibrary
+/home/oli/.local/share/containers
+/home/oli/.local/share/Trash
+/home/oli/.ollama/models
+/home/oli/code/misc/comfy/models
+/home/oli/code/misc/chats-2/.local/models
+*.gguf
+*.safetensors
+*.ckpt
+
+# --- Disk and VM images ---
+*.iso
+*.qcow2
+*.vdi
+*.vmdk
+*.vhd
+*.vhdx
+*.ova
+
+# --- Agent and editor state: keep settings, sessions and history, drop caches ---
+/home/oli/.codex/packages
+/home/oli/.codex/cache
+/home/oli/.codex/vendor_imports
+/home/oli/.codex/shell_snapshots
+/home/oli/.codex/logs_*.sqlite*
+/home/oli/.codex/.tmp
+/home/oli/.claude/cache
+/home/oli/.claude/telemetry
+/home/oli/.claude/shell-snapshots
+/home/oli/.claude/statsig
+/home/oli/.claude/debug
+/home/oli/.t3/caches
+/home/oli/.t3/userdata/logs
+
+# --- Electron and Chromium caches under ~/.config (Cursor, Slack, T3 Code, browsers, ...) ---
+/home/oli/.config/**/Cache
+/home/oli/.config/**/Code Cache
+/home/oli/.config/**/GPUCache
+/home/oli/.config/**/GPUPersistentCache
+/home/oli/.config/**/DawnGraphiteCache
+/home/oli/.config/**/DawnWebGPUCache
+/home/oli/.config/**/GrShaderCache
+/home/oli/.config/**/ShaderCache
+/home/oli/.config/**/CachedData
+/home/oli/.config/**/CachedExtensionVSIXs
+/home/oli/.config/**/CachedProfilesData
+/home/oli/.config/**/Service Worker/CacheStorage
+/home/oli/.config/**/Service Worker/ScriptCache
+/home/oli/.config/**/Crashpad
+/home/oli/.config/**/component_crx_cache
+/home/oli/.config/**/extensions_crx_cache
+/home/oli/.config/**/optimization_guide_model_store
+/home/oli/.config/**/WasmTtsEngine
+/home/oli/.config/**/WidevineCdm
+/home/oli/.config/*/logs
+
+# --- Firefox-based browser (Zen) caches ---
+/home/oli/.zen/*/storage/default/*/cache
+/home/oli/.zen/*/cache2
+/home/oli/.zen/Crash Reports
+/home/oli/.mozilla/firefox/*/cache2
+
+# --- Build output and dependency trees inside projects ---
+node_modules
+.next
+.turbo
+.parcel-cache
+.svelte-kit
+.nuxt
+.expo
+.wrangler
+.vercel/output
+.gradle
+.dart_tool
+.godot
+.zig-cache
+zig-out
+.direnv
+.venv
+venv
+.tox
+__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.pyc
+**/target
+**/dist
+tmp_pack_*
+
+# --- System ---
+/var/lib/docker
+/etc/.updated
+/etc/pacman.d/gnupg/S.*

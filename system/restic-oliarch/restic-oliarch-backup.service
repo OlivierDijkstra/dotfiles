@@ -1,0 +1,18 @@
+[Unit]
+Description=Restic backup of oliarch to nasigoreng
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=/mnt/nasigoreng
+OnFailure=restic-oliarch-notify@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/oliarch-backup backup
+TimeoutStartSec=12h
+Nice=19
+CPUSchedulingPolicy=batch
+IOSchedulingClass=idle
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/restic-oliarch /var/cache/restic-oliarch /var/backups/oliarch /mnt/nasigoreng

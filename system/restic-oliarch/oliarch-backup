@@ -1,0 +1,265 @@
+#!/usr/bin/env bash
+# Restic backup of oliarch to the NAS, installed to /usr/local/sbin by
+# scripts/install-restic-backup. Writes /var/lib/restic-oliarch/status.json
+# for the dynamic island.
+#
+#   oliarch-backup backup [--dry-run]   back up, then apply retention (root)
+#   oliarch-backup check                prune, then verify 5% of pack data (root)
+#   oliarch-backup status               show status.json and timers
+#   oliarch-backup notify UNIT          desktop notification for a failed unit
+
+# jq filters reference their own $variables inside single quotes.
+# shellcheck disable=SC2016
+set -euo pipefail
+
+ENV_FILE=${OLIARCH_BACKUP_ENV:-/etc/restic-oliarch/env}
+EXCLUDES=${OLIARCH_BACKUP_EXCLUDES:-/etc/restic-oliarch/excludes}
+STATE_DIR=/var/lib/restic-oliarch
+STATUS_FILE=$STATE_DIR/status.json
+LOCK_FILE=$STATE_DIR/lock
+PKG_DIR=/var/backups/oliarch
+MOUNT=/mnt/nasigoreng
+HOST=oliarch
+NOTIFY_USER=oli
+PATHS=(/etc /home/oli /srv "$PKG_DIR")
+FORGET_POLICY=(--keep-daily 7 --keep-weekly 4 --keep-monthly 6)
+BACKUP_ARGS=(
+    --host "$HOST" --tag "$HOST"
+    --one-file-system --exclude-caches
+    --exclude-if-present CMakeCache.txt --exclude-if-present .nobackup
+    --exclude-file "$EXCLUDES"
+)
+
+MODE=""
+DRY_RUN=0
+STEP=""
+STARTED=0
+WORK_DIR=""
+ERR_LOG=/dev/null
+
+now() { date --iso-8601=seconds; }
+
+usage() {
+    sed -n '6,9s/^# //p' "$0"
+    exit 2
+}
+
+load_env() {
+    if [[ -r $ENV_FILE ]]; then
+        set -a
+        # shellcheck source=/dev/null
+        . "$ENV_FILE"
+        set +a
+    fi
+    : "${RESTIC_REPOSITORY:?not set; expected in $ENV_FILE}"
+    export RESTIC_REPOSITORY RESTIC_PASSWORD_FILE RESTIC_CACHE_DIR
+}
+
+# Merge a jq update into status.json and replace it atomically (0644, world-readable).
+write_status() {
+    local tmp current='{}'
+    [[ -s $STATUS_FILE ]] && current=$(jq -c . "$STATUS_FILE" 2>/dev/null || echo '{}')
+    tmp=$(mktemp "$STATUS_FILE.XXXXXX")
+    jq "$@" <<<"$current" >"$tmp"
+    chmod 0644 "$tmp"
+    mv -f "$tmp" "$STATUS_FILE"
+}
+
+# Short, single-line reason for status.json: the step plus restic's error
+# (its JSON exit_error when present, otherwise the last stderr line).
+failure_reason() {
+    local detail
+    detail=$(jq -Rr 'fromjson? | select(.message_type == "exit_error") | .message' "$ERR_LOG" 2>/dev/null | tail -n1)
+    [[ -n $detail ]] || detail=$(grep -v '^\s*$' "$ERR_LOG" 2>/dev/null | tail -n1 || true)
+    detail=$(tr -cd '[:print:]' <<<"$detail")
+    printf '%s' "${STEP:-startup} failed${detail:+: $detail}" | cut -c1-200
+}
+
+on_exit() {
+    local rc=$?
+    if ((rc != 0 && STARTED && !DRY_RUN)); then
+        local reason
+        reason=$(failure_reason)
+        echo "error: $reason" >&2
+        if [[ $MODE == backup ]]; then
+            write_status --arg now "$(now)" --arg error "$reason" --argjson duration $((SECONDS)) \
+                '.state = "failed" | .last_end = $now | .duration = $duration | .error = $error' || true
+        else
+            write_status --arg now "$(now)" --arg error "$reason" \
+                '.last_check = $now | .last_check_result = "failed" | .check_error = $error' || true
+        fi
+    fi
+    [[ -n $WORK_DIR ]] && rm -rf "$WORK_DIR"
+    exit "$rc"
+}
+
+# Serialise backup and check runs; restic's own lock covers other clients.
+take_lock() {
+    exec 9>"$LOCK_FILE"
+    STEP="waiting for another run"
+    flock -w 21600 9
+}
+
+require_root() {
+    if [[ $EUID -ne 0 ]]; then
+        echo "oliarch-backup $MODE must run as root (or use 'backup --dry-run' with RESTIC_* set)" >&2
+        exit 1
+    fi
+}
+
+require_mount() {
+    STEP="NAS mount check"
+    if ! mountpoint -q "$MOUNT"; then
+        echo "$MOUNT is not mounted" >"$ERR_LOG"
+        return 1
+    fi
+}
+
+# restic with stderr mirrored to the journal and kept for failure_reason.
+run_restic() {
+    restic "$@" 2> >(tee "$ERR_LOG" >&2)
+}
+
+# Removes only locks whose process is gone; live locks are left alone.
+unlock_stale() {
+    STEP="restic unlock"
+    run_restic unlock
+}
+
+dump_package_lists() {
+    STEP="package list dump"
+    install -d -m 0755 "$PKG_DIR"
+    pacman -Qqe >"$PKG_DIR/pkglist.txt"
+    pacman -Qqm >"$PKG_DIR/pkglist-aur.txt" || true
+    systemctl list-unit-files --state=enabled --no-legend --no-pager >"$PKG_DIR/enabled-units.txt"
+    systemctl --global list-unit-files --state=enabled --no-legend --no-pager >"$PKG_DIR/enabled-user-units.txt"
+}
+
+cmd_backup() {
+    if ((DRY_RUN)); then
+        load_env
+        require_mount
+        local paths=()
+        for path in "${PATHS[@]}"; do [[ -e $path ]] && paths+=("$path"); done
+        restic backup --dry-run "${BACKUP_ARGS[@]}" "${paths[@]}"
+        return
+    fi
+
+    require_root
+    load_env
+    take_lock
+    STARTED=1
+    SECONDS=0
+    write_status --arg now "$(now)" --arg host "$HOST" \
+        '.host = $host | .state = "running" | .last_start = $now | .error = null'
+
+    require_mount
+    dump_package_lists
+    unlock_stale
+
+    STEP="restic backup"
+    local out=$WORK_DIR/backup.jsonl rc
+    # JSON progress once a minute keeps the journal readable. Errors arrive
+    # as JSON on stderr and are replayed to the journal after the run.
+    set +e
+    RESTIC_PROGRESS_FPS=0.0167 restic backup --json "${BACKUP_ARGS[@]}" "${PATHS[@]}" 2>"$ERR_LOG" |
+        tee "$out" |
+        jq --unbuffered -r '
+            if .message_type == "status" then
+                "progress \(((.percent_done // 0) * 100) | floor)%: \(.files_done // 0)/\(.total_files // 0) files, \(((.bytes_done // 0) / 1e9 * 10 | floor) / 10) GB"
+            elif .message_type == "summary" then "snapshot \(.snapshot_id[0:8]): \(.files_new) new, \(.files_changed) changed, \(.data_added) bytes added"
+            else empty end'
+    rc=${PIPESTATUS[0]}
+    set -e
+    cat "$ERR_LOG" >&2
+
+    # Exit 3: snapshot written, but some files were unreadable.
+    ((rc == 0 || rc == 3)) || return "$rc"
+
+    local summary warning=null
+    summary=$(jq -c 'select(.message_type == "summary")' "$out" | tail -n1)
+    if ((rc == 3)); then
+        warning=$(jq -Rn '"warning: \([inputs | fromjson? | select(.message_type == "error")] | length) files could not be read"' "$ERR_LOG")
+    fi
+    write_status --arg now "$(now)" --argjson s "$summary" --argjson warning "$warning" \
+        '.last_success = $now | .snapshot_id = $s.snapshot_id | .files_new = $s.files_new
+         | .files_changed = $s.files_changed | .data_added = $s.data_added
+         | .total_bytes = $s.total_bytes_processed | .error = $warning'
+
+    STEP="restic forget"
+    run_restic forget --host "$HOST" "${FORGET_POLICY[@]}"
+
+    write_status --arg now "$(now)" --argjson duration $((SECONDS)) \
+        '.state = "ok" | .last_end = $now | .duration = $duration'
+    echo "backup finished in ${SECONDS}s"
+}
+
+cmd_check() {
+    require_root
+    load_env
+    take_lock
+    STARTED=1
+    require_mount
+    unlock_stale
+
+    STEP="restic prune"
+    run_restic prune
+    STEP="restic check"
+    run_restic check --read-data-subset=5%
+
+    write_status --arg now "$(now)" \
+        '.last_check = $now | .last_check_result = "ok" | .check_error = null'
+}
+
+cmd_status() {
+    if [[ ! -r $STATUS_FILE ]]; then
+        echo "no status yet ($STATUS_FILE missing)"
+    else
+        jq -r '
+            "state:        \(.state // "unknown")",
+            "last start:   \(.last_start // "never")",
+            "last end:     \(.last_end // "never")",
+            "last success: \(.last_success // "never")",
+            "snapshot:     \(.snapshot_id // "-" | .[0:8])",
+            "added:        \(.data_added // 0) bytes (\(.files_new // 0) new, \(.files_changed // 0) changed files) in \(.duration // 0)s",
+            "error:        \(.error // "-")",
+            "last check:   \(.last_check // "never") (\(.last_check_result // "-"))"
+        ' "$STATUS_FILE"
+    fi
+    echo
+    systemctl list-timers --no-pager 'restic-oliarch-*'
+}
+
+# Called by restic-oliarch-notify@.service; stays quiet without a desktop session.
+cmd_notify() {
+    local unit=${1:?unit name required} uid bus
+    uid=$(id -u "$NOTIFY_USER")
+    bus=/run/user/$uid/bus
+    [[ -S $bus ]] || exit 0
+    runuser -u "$NOTIFY_USER" -- env DBUS_SESSION_BUS_ADDRESS="unix:path=$bus" XDG_RUNTIME_DIR="/run/user/$uid" \
+        notify-send --app-name=Backup --urgency=critical --icon=drive-harddisk \
+        "Backup failed" "$unit failed. Run: journalctl -u $unit" || true
+}
+
+MODE=${1:-}
+[[ $# -gt 0 ]] && shift
+# Bash skips the EXIT trap when killed by a signal (systemctl stop sends SIGTERM).
+trap 'exit 143' TERM INT HUP
+case $MODE in
+    backup)
+        [[ ${1:-} == --dry-run ]] && DRY_RUN=1
+        WORK_DIR=$(mktemp -d)
+        ERR_LOG=$WORK_DIR/stderr
+        trap on_exit EXIT
+        cmd_backup
+        ;;
+    check)
+        WORK_DIR=$(mktemp -d)
+        ERR_LOG=$WORK_DIR/stderr
+        trap on_exit EXIT
+        cmd_check
+        ;;
+    status) cmd_status ;;
+    notify) cmd_notify "$@" ;;
+    *) usage ;;
+esac

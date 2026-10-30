@@ -4,6 +4,8 @@ CLAUDE\.md
 scripts
 sddm
 skills
+# Root-installed sources (scripts/install-*), not stowed into ~
+^/system
 \.claude
 \.git
 \.gitignore

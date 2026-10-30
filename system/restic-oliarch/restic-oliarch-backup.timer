@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily restic backup of oliarch
+
+[Timer]
+OnCalendar=*-*-* 12:30
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

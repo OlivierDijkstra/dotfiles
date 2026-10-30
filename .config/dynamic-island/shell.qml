@@ -12,15 +12,16 @@ PanelWindow {
 
     WlrLayershell.namespace: "dynamic-island"
     WlrLayershell.layer: WlrLayer.Top
-    WlrLayershell.exclusiveZone: -1
+    WlrLayershell.exclusiveZone: root.topMargin + dateTimeWidget.surfaceHeight + root.windowGap
     WlrLayershell.anchors.top: true
     WlrLayershell.anchors.left: true
     WlrLayershell.anchors.right: true
 
-    exclusionMode: ExclusionMode.Ignore
+    exclusionMode: ExclusionMode.Normal
     focusable: false
 
     readonly property int topMargin: 0
+    readonly property int windowGap: 0
 
     Widgets.MediaState {
         id: mediaState
@@ -80,6 +81,7 @@ PanelWindow {
             audioRouteState: audioRouteState
         },
         Widgets.DateTimeWidget {
+            id: dateTimeWidget
             recordingState: recordingState
             mediaState: mediaState
             keepAwakeState: keepAwakeState

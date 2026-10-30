@@ -57,6 +57,8 @@ Blur uses a single temporary item layer with `MultiEffect`, with a normalized bl
 
 The panel reserves enough backing-buffer height for its largest widget, while its input mask follows the visible island. Ordinary layout transitions therefore avoid resizing the Wayland buffer every frame. Widget size changes can still adjust the capacity; an in-flight surface is kept inside it.
 
+The compositor reserves the compact date/workspace pill's height at the top of the screen, with no extra gap. Tiled and maximized windows stay below the pill. Expanded panels overlay windows without changing the reserved space or moving the layout.
+
 ## Styling
 
 - Semantic colors are generated from `.config/theme/palette.json`.

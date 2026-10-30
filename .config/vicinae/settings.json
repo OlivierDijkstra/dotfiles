@@ -42,6 +42,9 @@
             },
             "protontricks": {
                "enabled": false
+            },
+            "zen": {
+               "enabled": false
             }
          }
       },
